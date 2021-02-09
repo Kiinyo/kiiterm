@@ -1,0 +1,17 @@
+[package]
+name = "kiiterm"
+version = "0.0.0"
+authors = ["Kathrine \"Kiinyo\" Lemet"]
+edition = "2018"
+
+
+description = "A game engine for ANSI terminals using Termion as a framework!"
+repository = "https://github.com/Kiinyo/kii"
+keywords = ["kii", "kiiterm"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kii = "0.0.1"
+termion = "1.5.6"
