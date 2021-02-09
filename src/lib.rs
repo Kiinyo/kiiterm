@@ -1,3 +1,4 @@
+pub mod screen;
 #[cfg(test)]
 mod tests {
     #[test]
