@@ -1,4 +1,4 @@
 extern crate kiiterm;
 fn main() {
-    kiiterm::screen::resize(100, 25);
+    println!("New window size: {:?}",kiiterm::terminal::resize(1000, 205));
 }

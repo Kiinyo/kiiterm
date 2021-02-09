@@ -1,4 +1,4 @@
-pub mod screen;
+pub mod terminal;
 #[cfg(test)]
 mod tests {
     #[test]
