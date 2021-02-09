@@ -6,7 +6,7 @@ edition = "2018"
 
 
 description = "A game engine for ANSI terminals using Termion as a framework!"
-repository = "https://github.com/Kiinyo/kii"
+repository = "https://github.com/Kiinyo/kiiterm"
 keywords = ["kii", "kiiterm"]
 license = "MIT"
 
