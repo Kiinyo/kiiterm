@@ -1,3 +1,4 @@
+/// A list of a commands to manipulate the ANSI terminal
 pub mod terminal;
 #[cfg(test)]
 mod tests {
