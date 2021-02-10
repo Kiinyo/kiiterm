@@ -1,0 +1,73 @@
+[1..26] = Ctrl + (a..Z)
+
+[27] = ESC
+
+    [65..90] = Alt + (A..Z)
+    [97..122] = Alt + (a..z)
+    [1..26] = Ctrl + Alt (a..Z)
+
+    Delete = [91, 51]
+        Format: [
+            27, // Escape
+            91, 51, // Delete Command
+            [] [59, 50..51] [59, 53] // [Default] [Shift..Alt] [Ctrl]
+            126 // Ending
+        ]
+
+
+
+
+    Mouse Event = [91, 60]
+
+        Button Press / Release
+
+            Format: [
+                27, // ESC
+                91, 60, // Mouse Event
+                [48..50, 59] [49, 54..56, 59] [56..57, 59] [49, 48, 59] // [LMB..RMB] [Ctrl + LMB..RMB] [Alt + LMB..MMB] [Alt + RMB]
+                48..57, etc. // x (Range: [48] - [57, 57, 57])
+                59, // Separator
+                48..57, etc. // y (Range: [48] - [57, 57, 57])
+                77/109 // [77] = Press / [109] = Release
+            ]
+        
+        Drag
+
+            Format: [
+                27, // ESC
+                91, 60, // Mouse Event
+                [51, 50..52, 59] [52, 56..57, 59] [53, 48, 59] [52, 48..50] // [LMB..RMB] [Ctrl + LMB..MMB] [Ctrl + RMB] [Alt + LMB..RMB]
+                48..57, etc. // x (Range: [48] - [57, 57, 57])
+                59, // Separator
+                48..57, etc. // y (Range: [48] - [57, 57, 57])
+                77 // Press
+            ]
+
+        Scroll
+
+            Format: [
+                27, // ESC
+                91, 60, // Mouse Event
+                [54, 52..53, 59] [55, 50..51, 59] [56, 48..49, 59] // [Down..Up] [Alt + Down..Up] [Ctrl + Down..Up]
+                51, 57,
+                59,
+                49,
+                77
+            ]
+
+    Arrow Keys [91]
+        65 = Up
+        66 = Down
+        67 = Right
+        68 = Left
+    Shift + Arrow Keys
+        [91, 49, 59, 50] + [65..68]
+    Alt + Arrow Keys
+        [91, 49, 59, 51] + [65..68]
+    Ctrl + Arrow Keys
+        [91, 49, 59, 53] + [65..68]
+
+
+
+
+
