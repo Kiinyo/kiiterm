@@ -187,7 +187,45 @@ pub mod input {
                                             // Insert
                                             50 => {},
                                             // Delete command
-                                            51 => {},
+                                            51 => {
+                                                if index < length {
+                                                    index += 1;
+                                                    
+                                                    match buffer[index] {
+                                                        59 => {
+                                                            if index < length {
+                                                                index += 1;
+
+                                                                match buffer[index] {
+                                                                    50 => {
+                                                                        inputs.push(Key::Shift_Delete);
+                                                                        // Skip the 126 ending
+                                                                        index += 1;
+                                                                    },
+                                                                    51 => {
+                                                                        inputs.push(Key::Alt_Delete);
+                                                                        // Skip the 126 ending
+                                                                        index += 1;
+                                                                    },
+                                                                    53 =>{
+                                                                        inputs.push(Key::Ctrl_Delete);
+                                                                        // Skip the 126 ending
+                                                                        index += 1;
+                                                                    },
+                                                                    _ => inputs.push(Key::Null)
+                                                                }
+                                                            } else {
+                                                                inputs.push(Key::Null);
+                                                            }
+                                                        },
+                                                        126 => inputs.push(Key::Delete),
+                                                        _ => inputs.push(Key::Null)
+                                                    }
+                                                } else {
+                                                    inputs.push(Key::Null);
+                                                    break 'new_input;
+                                                }
+                                            },
                                             53 => {},
                                             54 => {},
                                             // Mouse Event
@@ -196,8 +234,6 @@ pub mod input {
                                                 inputs.push(Key::Null);
                                             }
                                         }
-                                        
-                                        index += 1;
 
                                     } else {
                                         inputs.push(Key::Char('['));
@@ -212,8 +248,6 @@ pub mod input {
                                     inputs.push(Key::Null);
                                 }
                             }
-
-                            index += 1;
 
                         } else {
                             inputs.push(Key::Escape);
