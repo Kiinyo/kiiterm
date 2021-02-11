@@ -175,6 +175,10 @@ pub mod input {
            place *= 10;
         }
 
+        let number: String = format!("{:?}", number);
+        let number: String = number.chars().rev().collect::<String>();
+        let number: u16 = number.parse().unwrap();
+
         (number, inc)
     }
     // This takes the buffer from Screen
@@ -460,7 +464,7 @@ pub mod input {
                                                                     } else if buffer[remember_me] == 49 {
                                                                         inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Null});
                                                                     } else if buffer[remember_me] == 50 {
-                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Null});
+                                                                        inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Null});
                                                                     } else {
                                                                         inputs.push(Input::Null);
                                                                     }
@@ -471,13 +475,104 @@ pub mod input {
                                                                     } else if buffer[remember_me] == 49 {
                                                                         inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Null});
                                                                     } else if buffer[remember_me] == 50 {
-                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Null});
+                                                                        inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Null});
                                                                     } else {
                                                                         inputs.push(Input::Null);
                                                                     }
                                                                 }
+                                                            } else if buffer[index] >= 54 && buffer[index] <= 56 && buffer[index - 1] == 49 {
+                                                                let remember_me = index;
+                                                                index += 2;
+                                                                let (x, inc ) = parse_numbers(buffer, index);
+                                                                index += 1 + inc;
+                                                                let (y, inc) = parse_numbers(buffer, index); 
+                                                                index += inc;
+                                                                if buffer[index] == 77 {
+                                                                    //  It's being Pressed
+                                                                    if buffer[remember_me] == 54 {
+                                                                        inputs.push(Input::LMB_Press{x, y, modifier: Modifier::Ctrl});
+                                                                    } else if buffer[remember_me] == 55 {
+                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Ctrl});
+                                                                    } else if buffer[remember_me] == 56 {
+                                                                        inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Ctrl});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                } else if buffer[index] == 109 {
+                                                                    // It's being Released
+                                                                    if buffer[remember_me] == 54 {
+                                                                        inputs.push(Input::LMB_Release{x, y, modifier: Modifier::Ctrl});
+                                                                    } else if buffer[remember_me] == 55 {
+                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Ctrl});
+                                                                    } else if buffer[remember_me] == 56 {
+                                                                        inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Ctrl});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                }
+
+                                                            } else if buffer[index] == 48 {
+                                                                index += 2;
+                                                                let (x, inc ) = parse_numbers(buffer, index);
+                                                                index += 1 + inc;
+                                                                let (y, inc) = parse_numbers(buffer, index); 
+                                                                index += inc;
+                                                                if buffer[index] == 77 {
+                                                                    inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Alt});
+                                                                } else if buffer[index] == 109 {
+                                                                    inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Alt});
+                                                                }
                                                             } else {
                                                                 inputs.push(Input::Null);
+                                                            }
+                                                        }
+                                                        // Vanilla Drag
+                                                        51 => {
+                                                            index += 1;
+
+                                                            if buffer[index] > 49 && buffer[index] < 53 {
+                                                                let remember_me = index;
+                                                                index += 2;
+                                                                let (x, inc ) = parse_numbers(buffer, index);
+                                                                index += 1 + inc;
+                                                                let (y, inc) = parse_numbers(buffer, index); 
+                                                                index += inc;
+                                                                if buffer[index] == 77 {
+                                                                    //  It's being Pressed
+                                                                    if buffer[remember_me] == 50 {
+                                                                        inputs.push(Input::LMB_Move{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 51 {
+                                                                        inputs.push(Input::MMB_Move{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 52 {
+                                                                        inputs.push(Input::RMB_Move{x, y, modifier: Modifier::Null});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        // Vanilla Scroll
+                                                        54 => {
+                                                            index += 1;
+
+                                                            if buffer[index] == 52 || buffer[index] == 53 {
+                                                                let remember_me = index;
+                                                                index += 2;
+                                                                let (x, inc ) = parse_numbers(buffer, index);
+                                                                index += 1 + inc;
+                                                                let (y, inc) = parse_numbers(buffer, index); 
+                                                                index += inc;
+                                                                if buffer[index] == 77 {
+                                                                    //  It's being Pressed
+                                                                    if buffer[remember_me] == 52 {
+                                                                        inputs.push(Input::Scroll_Up{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 53 {
+                                                                        inputs.push(Input::Scroll_Down{x, y, modifier: Modifier::Null});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                }
+
                                                             }
                                                         }
                                                         _ => {inputs.push(Input::Null);}
