@@ -11,7 +11,7 @@ fn main() {
 
         screen.inputs.read_to_end(&mut buffer).unwrap();
 
-        let inputs: Vec<Key> = parse_input(&buffer);
+        let inputs: Vec<Input> = parse_input(&buffer);
 
         writeln!(screen.context,
         "{}{}Buffer: {:?} {}Interpreted Inputs: {:?}",
@@ -24,7 +24,7 @@ fn main() {
 
         if inputs.len() > 0 {
             match inputs[0] {
-                Key::Ctrl_Char(c) => {
+                Input::Ctrl_Char(c) => {
                     if c == 'C' {break;}
                 },
                 _ => {}

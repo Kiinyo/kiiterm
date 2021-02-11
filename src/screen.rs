@@ -25,9 +25,19 @@ pub fn init (width: u16, height: u16) -> Screen {
 }
 
 pub mod input {
+        #[derive(Debug)]
+    pub enum Modifier {
+        Alt,
+        Shift,
+        Ctrl,
+
+        None
+    }
+
+
     #[allow(non_camel_case_types)]
     #[derive(Debug)]
-    pub enum Key {
+    pub enum Input {
         // a..Z
         Char(char),
         Alt_Char(char),
@@ -96,6 +106,16 @@ pub mod input {
         Page_Up,
         Page_Down,
 
+        Shift_Page_Up,
+        Alt_Page_Up,
+        Ctrl_Page_Up,
+        Ctrl_Alt_Page_Up,
+
+        Shift_Page_Down,
+        Alt_Page_Down,
+        Ctrl_Page_Down,
+        Ctrl_Alt_Page_Down,
+
         // End
 
         End,
@@ -106,22 +126,6 @@ pub mod input {
 
         Alt_Enter,
 
-        // Null, junk/invalid/no inputs
-
-        Null
-    }
-    #[derive(Debug)]
-    pub enum Modifier {
-        Alt,
-        Shift,
-        Ctrl,
-
-        None
-    }
-    /// Follows Enum(x, y, Modifier)    
-    #[allow(non_camel_case_types)]
-    #[derive(Debug)]
-    pub enum Mouse {
         // Left Mouse Button
         LMB_Press {x: u16, y: u16, modifier: Modifier},
         LMB_Release {x: u16, y: u16, modifier: Modifier},
@@ -139,11 +143,15 @@ pub mod input {
 
         // Scrolling
         Scroll_Up {x: u16, y: u16, modifier: Modifier},
-        Scroll_Down {x: u16, y: u16, modifier: Modifier}
+        Scroll_Down {x: u16, y: u16, modifier: Modifier},
+
+        // Null, junk/invalid/no inputs
+
+        Null
     }
 
     // This takes the buffer from Screen
-    pub fn parse_input (buffer: &Vec<u8>) -> Vec<Key> {
+    pub fn parse_input (buffer: &Vec<u8>) -> Vec<Input> {
         let mut inputs = Vec::new();
         let mut index: usize = 0;
         let length: usize = buffer.len();
@@ -153,34 +161,35 @@ pub mod input {
                 match buffer[index] {
                     // It's Ctrl + A..Z
                     1..=12 | 14..=26 => {
-                        inputs.push(Key::Ctrl_Char(parse_char(buffer[index] + 31)));
+                        inputs.push(Input::Ctrl_Char(parse_char(buffer[index] + 31)));
                     },
                     13 => {
-                        inputs.push(Key::Enter);
+                        inputs.push(Input::Enter);
                     }
                     // We've hit an escape code
                     27 => {
+                        index += 1;
                         if index < length {
-                            index += 1;
 
                             // Let's figure out what the escape code says!
                             match buffer[index] {
                                 // It's Ctrl + Alt + Char
                                 1..=12 | 14..=26 => {
-                                    inputs.push(Key::Ctrl_Alt_Char(parse_char(buffer[index] + 31)));
+                                    inputs.push(Input::Ctrl_Alt_Char(parse_char(buffer[index] + 31)));
                                 },
+                                // Enter
                                 13 => {
-                                    inputs.push(Key::Alt_Enter)
+                                    inputs.push(Input::Alt_Enter)
                                 },
                                 // Another escape code
                                 27 => {
-                                    inputs.push(Key::Escape);
+                                    inputs.push(Input::Escape);
                                     continue 'new_input;
                                 },
                                 // A command!
                                 91 => {
+                                    index += 1;
                                     if index < length {
-                                        index += 1;
 
                                         match buffer[index] {
 
@@ -193,73 +202,75 @@ pub mod input {
                                                         if buffer[index] == 50 {
                                                             index += 1;
                                                             if buffer[index] == 65 {
-                                                                inputs.push(Key::Shift_Up);
+                                                                inputs.push(Input::Shift_Up);
                                                             } else if buffer[index] == 66 {
-                                                                inputs.push(Key::Shift_Down);
+                                                                inputs.push(Input::Shift_Down);
                                                             } else if buffer[index] == 67 {
-                                                                inputs.push(Key::Shift_Right);
+                                                                inputs.push(Input::Shift_Right);
                                                             } else if buffer[index] == 68 {
-                                                                inputs.push(Key::Shift_Left);
+                                                                inputs.push(Input::Shift_Left);
                                                             } else {
-                                                                inputs.push(Key::Null);
+                                                                inputs.push(Input::Null);
                                                             }
                                                         } else if buffer[index] == 51 {
                                                             index += 1;
                                                             if buffer[index] == 65 {
-                                                                inputs.push(Key::Alt_Up);
+                                                                inputs.push(Input::Alt_Up);
                                                             } else if buffer[index] == 66 {
-                                                                inputs.push(Key::Alt_Down);
+                                                                inputs.push(Input::Alt_Down);
                                                             } else if buffer[index] == 67 {
-                                                                inputs.push(Key::Alt_Right);
+                                                                inputs.push(Input::Alt_Right);
                                                             } else if buffer[index] == 68 {
-                                                                inputs.push(Key::Alt_Left);
+                                                                inputs.push(Input::Alt_Left);
                                                             } else {
-                                                                inputs.push(Key::Null);
+                                                                inputs.push(Input::Null);
                                                             }
                                                         } else if buffer[index] == 53 {
                                                             index += 1;
                                                             if buffer[index] == 65 {
-                                                                inputs.push(Key::Ctrl_Up);
+                                                                inputs.push(Input::Ctrl_Up);
                                                             } else if buffer[index] == 66 {
-                                                                inputs.push(Key::Ctrl_Down);
+                                                                inputs.push(Input::Ctrl_Down);
                                                             } else if buffer[index] == 67 {
-                                                                inputs.push(Key::Ctrl_Right);
+                                                                inputs.push(Input::Ctrl_Right);
                                                             } else if buffer[index] == 68 {
-                                                                inputs.push(Key::Ctrl_Left);
+                                                                inputs.push(Input::Ctrl_Left);
                                                             } else {
-                                                                inputs.push(Key::Null);
+                                                                inputs.push(Input::Null);
                                                             }
                                                         }
                                                     } else {
-                                                        inputs.push(Key::Null);
+                                                        inputs.push(Input::Null);
                                                     }
                                                 } else {
-                                                    inputs.push(Key::Null);
+                                                    inputs.push(Input::Null);
                                                 }
                                             },
+
                                             // Insert
                                             50 => {
+                                                index += 1;
                                                 if index < length {
-                                                    index += 1;
 
                                                     if buffer[index] == 59 {
-                                                        inputs.push(Key::Alt_Insert);
+                                                        inputs.push(Input::Alt_Insert);
                                                         // Skipping over [51, 126]
                                                         index += 2;
                                                     } else if buffer[index] == 126 {
-                                                        inputs.push(Key::Insert)
+                                                        inputs.push(Input::Insert)
                                                     } else {
-                                                        inputs.push(Key::Null)
+                                                        inputs.push(Input::Null)
                                                     }
 
                                                 } else {
-                                                    inputs.push(Key::Null)
+                                                    inputs.push(Input::Null)
                                                 }
                                             },
+
                                             // Delete command
                                             51 => {
+                                                index += 1;
                                                 if index < length {
-                                                    index += 1;
                                                     
                                                     match buffer[index] {
                                                         59 => {
@@ -268,80 +279,183 @@ pub mod input {
 
                                                                 match buffer[index] {
                                                                     50 => {
-                                                                        inputs.push(Key::Shift_Delete);
+                                                                        inputs.push(Input::Shift_Delete);
                                                                         // Skip the 126 ending
                                                                         index += 1;
                                                                     },
                                                                     51 => {
-                                                                        inputs.push(Key::Alt_Delete);
+                                                                        inputs.push(Input::Alt_Delete);
                                                                         // Skip the 126 ending
                                                                         index += 1;
                                                                     },
                                                                     53 =>{
-                                                                        inputs.push(Key::Ctrl_Delete);
+                                                                        inputs.push(Input::Ctrl_Delete);
                                                                         // Skip the 126 ending
                                                                         index += 1;
                                                                     },
-                                                                    _ => inputs.push(Key::Null)
+                                                                    _ => inputs.push(Input::Null)
                                                                 }
                                                             } else {
-                                                                inputs.push(Key::Null);
+                                                                inputs.push(Input::Null);
                                                             }
                                                         },
-                                                        126 => inputs.push(Key::Delete),
-                                                        _ => inputs.push(Key::Null)
+                                                        126 => inputs.push(Input::Delete),
+                                                        _ => inputs.push(Input::Null)
                                                     }
                                                 } else {
-                                                    inputs.push(Key::Null);
+                                                    inputs.push(Input::Null);
                                                     break 'new_input;
                                                 }
                                             },
-                                            53 => {},
-                                            54 => {},
+
+                                            // Page Up
+                                            53 => {
+                                                index += 1;
+                                                if index < length {
+                                                    if buffer[index] == 126 {
+                                                        inputs.push(Input::Page_Down)
+                                                    } else if buffer[index] == 59 {
+                                                        index += 1;
+                                                        if index + 1 < length {
+                                                            if buffer[index] == 50 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Shift_Page_Up);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 51 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Alt_Page_Up);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 53 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Ctrl_Page_Up);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 55 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Ctrl_Alt_Page_Up);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else {
+                                                                inputs.push(Input::Null)
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null)
+                                                        }
+                                                    } else {
+                                                        inputs.push(Input::Null)
+                                                    }
+                                                } else {
+                                                    inputs.push(Input::Null);
+                                                }
+                                            },
+                                            // Page Down
+                                            54 => {
+                                                index += 1;
+                                                if index < length {
+                                                    if buffer[index] == 126 {
+                                                        inputs.push(Input::Page_Down)
+                                                    } else if buffer[index] == 59 {
+                                                        index += 1;
+                                                        if index + 1 < length {
+                                                            if buffer[index] == 50 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Shift_Page_Down);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 51 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Alt_Page_Down);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 53 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Ctrl_Page_Down);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 55 {
+                                                                index += 1;
+                                                                if buffer[index] == 126 {
+                                                                    inputs.push(Input::Ctrl_Alt_Page_Down);
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else {
+                                                                inputs.push(Input::Null)
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null)
+                                                        }
+                                                    } else {
+                                                        inputs.push(Input::Null)
+                                                    }
+                                                } else {
+                                                    inputs.push(Input::Null);
+                                                }
+                                            },
+
                                             // Mouse Event
-                                            60 => {},
+                                            60 => {
+                                            },
+
+                                            // Arrow Inputs
                                             65..=68 => {
                                                 if buffer[index] == 65 {
-                                                    inputs.push(Key::Up);
+                                                    inputs.push(Input::Up);
                                                 } else if buffer[index] == 66 {
-                                                    inputs.push(Key::Down);
+                                                    inputs.push(Input::Down);
                                                 } else if buffer[index] == 67 {
-                                                    inputs.push(Key::Right);
+                                                    inputs.push(Input::Right);
                                                 } else if buffer[index] == 68 {
-                                                    inputs.push(Key::Left);
+                                                    inputs.push(Input::Left);
                                                 }
                                             },
                                             _ => {
-                                                inputs.push(Key::Null);
+                                                inputs.push(Input::Null);
                                             }
                                         }
 
                                     } else {
-                                        inputs.push(Key::Char('['));
+                                        inputs.push(Input::Char('['));
                                         break 'new_input;
                                     }
                                 }
                                 // It's Alt + Char
                                 33..=90 | 92..=126 => {
-                                    inputs.push(Key::Alt_Char(parse_char(buffer[index] - 33)));
+                                    inputs.push(Input::Alt_Char(parse_char(buffer[index] - 33)));
                                 }
                                 _ => {
-                                    inputs.push(Key::Null);
+                                    inputs.push(Input::Null);
                                 }
                             }
 
                         } else {
-                            inputs.push(Key::Escape);
-                            break;
+                            inputs.push(Input::Escape);
+                            break 'new_input;
                         };
 
                     },
                     // It's just a character!
                     33..=126 => {
-                        inputs.push(Key::Char(parse_char(buffer[index] - 33)));
+                        inputs.push(Input::Char(parse_char(buffer[index] - 33)));
                     }
                     _ => {
-                        inputs.push(Key::Null);
+                        inputs.push(Input::Null);
                     }
                 }
                 index += 1;
