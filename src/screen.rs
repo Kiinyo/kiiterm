@@ -85,6 +85,8 @@ pub mod input {
 
         Insert,
 
+        Alt_Insert,
+
         // Home
 
         Home,
@@ -185,7 +187,24 @@ pub mod input {
                                             // Modified arrow keys
                                             49 => {},
                                             // Insert
-                                            50 => {},
+                                            50 => {
+                                                if index < length {
+                                                    index += 1;
+
+                                                    if buffer[index] == 59 {
+                                                        inputs.push(Key::Alt_Insert);
+                                                        // Skipping over [51]
+                                                        index += 1;
+                                                    } else if buffer[index] == 126 {
+                                                        inputs.push(Key::Insert)
+                                                    } else {
+                                                        inputs.push(Key::Null)
+                                                    }
+
+                                                } else {
+                                                    inputs.push(Key::Null)
+                                                }
+                                            },
                                             // Delete command
                                             51 => {
                                                 if index < length {
