@@ -448,7 +448,7 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
                                                             }
                                                         }
                                                     },
-                                                    // Vanilla or Shift Scroll
+                                                    // (Vanilla or Shift) + Scroll
                                                     54 => {
                                                         index += 1;
 
@@ -536,8 +536,39 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
                                                                 }
                                                             }
 
+                                                        } else if buffer[index] == 59 {
+                                                            index += 1;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                inputs.push(Input::LMB_Press{x, y, modifier: Input_Modifier::Alt});
+                                                            } else if buffer[index] == 109 {
+                                                                inputs.push(Input::LMB_Release{x, y, modifier: Input_Modifier::Alt});
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+
                                                         }
                                                         
+                                                    }
+                                                    57 => {
+                                                        index += 1;
+                                                        if buffer[index] == 59 {
+                                                            index += 1;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                inputs.push(Input::MMB_Press{x, y, modifier: Input_Modifier::Alt});
+                                                            } else if buffer[index] == 109 {
+                                                                inputs.push(Input::MMB_Release{x, y, modifier: Input_Modifier::Alt});
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        }
                                                     }
                                                     _ => {inputs.push(Input::Null);}
                                                 }
@@ -568,11 +599,14 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
                                     inputs.push(Input::Char('['));
                                     break 'new_input;
                                 }
-                            }
+                            },
                             // It's Alt + Char
                             33..=90 | 92..=126 => {
                                 inputs.push(Input::Alt_Char(parse_char(buffer[index] - 33)));
-                            }
+                            },
+                            127 => {
+                                inputs.push(Input::Alt_Backspace);
+                            },
                             _ => {
                                 inputs.push(Input::Null);
                             }
@@ -587,6 +621,9 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
                 // It's just a character!
                 33..=126 => {
                     inputs.push(Input::Char(parse_char(buffer[index] - 33)));
+                },
+                127 => {
+                    inputs.push(Input::Backspace);
                 }
                 _ => {
                     inputs.push(Input::Null);
