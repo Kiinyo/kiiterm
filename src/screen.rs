@@ -1,10 +1,12 @@
 use crate::terminal;
+use crate::Input;
+use crate::Input_Modifier;
 /// The structure that holds everything needed to handle inputs and draw to thet terminal
 pub struct Screen {
     pub width: u16,
     pub height: u16,
     pub context: termion::input::MouseTerminal<termion::raw::RawTerminal<std::io::Stdout>>,
-    pub inputs: termion::AsyncReader
+    inputs: termion::AsyncReader
 }
 /// Create the Screen to be used by nearly everything
 pub fn init (width: u16, height: u16) -> Screen {
@@ -23,725 +25,686 @@ pub fn init (width: u16, height: u16) -> Screen {
     // Finally return the screen to be used
     Screen {width, height, context, inputs}
 }
+/// Get a Vec of player Inputs, this returns every interaction
+/// with the window since the last time this function was run.
+pub fn get_inputs (screen: &mut Screen) -> Vec<Input> {
+    use std::io::Read;
 
-pub mod input {
-        #[derive(Debug)]
-    pub enum Modifier {
-        Alt,
-        Shift,
-        Ctrl,
+    let mut buffer: Vec<u8> = Vec::new();
+    screen.inputs.read_to_end(&mut buffer).unwrap();
 
-        Null
-    }
+    parse_buffer(&buffer)
 
 
-    #[allow(non_camel_case_types)]
-    #[derive(Debug)]
-    pub enum Input {
-        // a..Z
-        Char(char),
-        Alt_Char(char),
-        // A..Z
-        // The terminal doe not recognize cae with Ctrl
-        Ctrl_Char(char),
-        Ctrl_Alt_Char(char),
+}
+pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
+    use std::io::Read;
 
-        // Any combination not listed is due to a limitation
-        // of the terminal (...usually)
+    let mut buffer: Vec<u8> = Vec::new();
+    screen.inputs.read_to_end(&mut buffer).unwrap();
 
-        // Backspace
+    (parse_buffer(&buffer), buffer)
 
-        Backspace,
 
-        Alt_Backspace,
+}
+fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
+    let mut number: u16 = 0;
+    let mut place: u16 = 1;
+    let mut inc: usize = 0;
+    let length: usize = buffer.len();
 
-        // Delete
+    loop {
+       if start < length {
+           match buffer[start] {
 
-        Delete,
-
-        Shift_Delete,
-        Alt_Delete,
-        Ctrl_Delete,
-
-        // Arrow Keys
-
-        Up,
-        Down,
-        Right,
-        Left,
-
-        Shift_Up,
-        Shift_Down,
-        Shift_Right,
-        Shift_Left,
-
-        Alt_Up,
-        Alt_Down,
-        Alt_Right,
-        Alt_Left,
-
-        Ctrl_Up,
-        Ctrl_Down,
-        Ctrl_Right,
-        Ctrl_Left,
-
-        // Escape - No other variations work it also
-        // shares 27 with escape codes so if escape
-        // is pressed with another key in the same 
-        // frame it will not register so be careful!
-        Escape,
-
-        // Insert
-
-        Insert,
-
-        Alt_Insert,
-
-        // Home
-
-        Home,
-
-        // Page
-        
-        Page_Up,
-        Page_Down,
-
-        Shift_Page_Up,
-        Alt_Page_Up,
-        Ctrl_Page_Up,
-        Ctrl_Alt_Page_Up,
-
-        Shift_Page_Down,
-        Alt_Page_Down,
-        Ctrl_Page_Down,
-        Ctrl_Alt_Page_Down,
-
-        // End
-
-        End,
-
-        // Enter
-
-        Enter,
-
-        Alt_Enter,
-
-        // Left Mouse Button
-        LMB_Press {x: u16, y: u16, modifier: Modifier},
-        LMB_Release {x: u16, y: u16, modifier: Modifier},
-        LMB_Move {x: u16, y: u16, modifier: Modifier},
-
-        // Middle Mouse Button
-        MMB_Press {x: u16, y: u16, modifier: Modifier},
-        MMB_Release {x: u16, y: u16, modifier: Modifier},
-        MMB_Move {x: u16, y: u16, modifier: Modifier},
-
-        // Right Mouse Button
-        RMB_Press {x: u16, y: u16, modifier: Modifier},
-        RMB_Release {x: u16, y: u16, modifier: Modifier},
-        RMB_Move {x: u16, y: u16, modifier: Modifier},
-
-        // Scrolling
-        Scroll_Up {x: u16, y: u16, modifier: Modifier},
-        Scroll_Down {x: u16, y: u16, modifier: Modifier},
-
-        // Null, junk/invalid/no inputs
-
-        Null
-    }
-
-    fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
-        let mut number: u16 = 0;
-        let mut place: u16 = 1;
-        let mut inc: usize = 0;
-        let length: usize = buffer.len();
-
-        loop {
-           if start < length {
-               match buffer[start] {
-
-                   48..=57 => {
-                       number += (buffer[start] as u16 - 48u16) * place;
-                   },
-                   _ => {
-                       break;
-                   }
-                }
-            } else {
-                break;
+               48..=57 => {
+                   number += (buffer[start] as u16 - 48u16) * place;
+               },
+               _ => {
+                   break;
+               }
             }
-           start += 1;
-           inc += 1;
-           place *= 10;
+        } else {
+            break;
         }
-
-        let number: String = format!("{:?}", number);
-        let number: String = number.chars().rev().collect::<String>();
-        let number: u16 = number.parse().unwrap();
-
-        (number, inc)
+       start += 1;
+       inc += 1;
+       place *= 10;
     }
-    // This takes the buffer from Screen
-    pub fn parse_input (buffer: &Vec<u8>) -> Vec<Input> {
-        let mut inputs = Vec::new();
-        let mut index: usize = 0;
-        let length: usize = buffer.len();
 
-        'new_input: loop {
-            if index < length {
-                match buffer[index] {
-                   
-                    // It's Ctrl + A..Z
-                    1..=12 | 14..=26 => {
-                        inputs.push(Input::Ctrl_Char(parse_char(buffer[index] + 31)));
-                    },
-                    13 => {
-                        inputs.push(Input::Enter);
-                    }
-                    // We've hit an escape code
-                    27 => {
-                        index += 1;
-                        if index < length {
+    let number: String = format!("{:?}", number);
+    let number: String = number.chars().rev().collect::<String>();
+    let number: u16 = number.parse().unwrap();
 
-                            // Let's figure out what the escape code says!
-                            match buffer[index] {
-                                // It's Ctrl + Alt + Char
-                                1..=12 | 14..=26 => {
-                                    inputs.push(Input::Ctrl_Alt_Char(parse_char(buffer[index] + 31)));
-                                },
-                                // Enter
-                                13 => {
-                                    inputs.push(Input::Alt_Enter)
-                                },
-                                // Another escape code
-                                27 => {
-                                    inputs.push(Input::Escape);
-                                    continue 'new_input;
-                                },
-                                // A command!
-                                91 => {
-                                    index += 1;
-                                    if index < length {
+    (number, inc)
+}
+// This takes the buffer from Screen.inputs and returns kiiterm::input::Input
+fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
+    let mut inputs = Vec::new();
+    let mut index: usize = 0;
+    let length: usize = buffer.len();
 
-                                        match buffer[index] {
+    'new_input: loop {
+        if index < length {
+            match buffer[index] {
+               
+                // It's Ctrl + A..Z
+                1..=12 | 14..=26 => {
+                    inputs.push(Input::Ctrl_Char(parse_char(buffer[index] + 31)));
+                },
+                13 => {
+                    inputs.push(Input::Enter);
+                }
+                // We've hit an escape code
+                27 => {
+                    index += 1;
+                    if index < length {
 
-                                            // Modified arrow keys
-                                            49 => {
-                                                if index + 3 < length {
+                        // Let's figure out what the escape code says!
+                        match buffer[index] {
+                            // It's Ctrl + Alt + Char
+                            1..=12 | 14..=26 => {
+                                inputs.push(Input::Ctrl_Alt_Char(parse_char(buffer[index] + 31)));
+                            },
+                            // Enter
+                            13 => {
+                                inputs.push(Input::Alt_Enter)
+                            },
+                            // Another escape code
+                            27 => {
+                                inputs.push(Input::Escape);
+                                continue 'new_input;
+                            },
+                            // A command!
+                            91 => {
+                                index += 1;
+                                if index < length {
+
+                                    match buffer[index] {
+
+                                        // Modified arrow keys
+                                        49 => {
+                                            if index + 3 < length {
+                                                index += 1;
+                                                if buffer[index] == 59 {
                                                     index += 1;
-                                                    if buffer[index] == 59 {
+                                                    if buffer[index] == 50 {
                                                         index += 1;
+                                                        if buffer[index] == 65 {
+                                                            inputs.push(Input::Shift_Up);
+                                                        } else if buffer[index] == 66 {
+                                                            inputs.push(Input::Shift_Down);
+                                                        } else if buffer[index] == 67 {
+                                                            inputs.push(Input::Shift_Right);
+                                                        } else if buffer[index] == 68 {
+                                                            inputs.push(Input::Shift_Left);
+                                                        } else {
+                                                            inputs.push(Input::Null);
+                                                        }
+                                                    } else if buffer[index] == 51 {
+                                                        index += 1;
+                                                        if buffer[index] == 65 {
+                                                            inputs.push(Input::Alt_Up);
+                                                        } else if buffer[index] == 66 {
+                                                            inputs.push(Input::Alt_Down);
+                                                        } else if buffer[index] == 67 {
+                                                            inputs.push(Input::Alt_Right);
+                                                        } else if buffer[index] == 68 {
+                                                            inputs.push(Input::Alt_Left);
+                                                        } else {
+                                                            inputs.push(Input::Null);
+                                                        }
+                                                    } else if buffer[index] == 53 {
+                                                        index += 1;
+                                                        if buffer[index] == 65 {
+                                                            inputs.push(Input::Ctrl_Up);
+                                                        } else if buffer[index] == 66 {
+                                                            inputs.push(Input::Ctrl_Down);
+                                                        } else if buffer[index] == 67 {
+                                                            inputs.push(Input::Ctrl_Right);
+                                                        } else if buffer[index] == 68 {
+                                                            inputs.push(Input::Ctrl_Left);
+                                                        } else {
+                                                            inputs.push(Input::Null);
+                                                        }
+                                                    }
+                                                } else {
+                                                    inputs.push(Input::Null);
+                                                }
+                                            } else {
+                                                inputs.push(Input::Null);
+                                            }
+                                        },
+
+                                        // Insert
+                                        50 => {
+                                            index += 1;
+                                            if index < length {
+
+                                                if buffer[index] == 59 {
+                                                    inputs.push(Input::Alt_Insert);
+                                                    // Skipping over [51, 126]
+                                                    index += 2;
+                                                } else if buffer[index] == 126 {
+                                                    inputs.push(Input::Insert)
+                                                } else {
+                                                    inputs.push(Input::Null)
+                                                }
+
+                                            } else {
+                                                inputs.push(Input::Null)
+                                            }
+                                        },
+
+                                        // Delete command
+                                        51 => {
+                                            index += 1;
+                                            if index < length {
+                                                
+                                                match buffer[index] {
+                                                    59 => {
+                                                        if index < length {
+                                                            index += 1;
+
+                                                            match buffer[index] {
+                                                                50 => {
+                                                                    inputs.push(Input::Shift_Delete);
+                                                                    // Skip the 126 ending
+                                                                    index += 1;
+                                                                },
+                                                                51 => {
+                                                                    inputs.push(Input::Alt_Delete);
+                                                                    // Skip the 126 ending
+                                                                    index += 1;
+                                                                },
+                                                                53 =>{
+                                                                    inputs.push(Input::Ctrl_Delete);
+                                                                    // Skip the 126 ending
+                                                                    index += 1;
+                                                                },
+                                                                _ => inputs.push(Input::Null)
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null);
+                                                        }
+                                                    },
+                                                    126 => inputs.push(Input::Delete),
+                                                    _ => inputs.push(Input::Null)
+                                                }
+                                            } else {
+                                                inputs.push(Input::Null);
+                                                break 'new_input;
+                                            }
+                                        },
+
+                                        // Page Up
+                                        53 => {
+                                            index += 1;
+                                            if index < length {
+                                                if buffer[index] == 126 {
+                                                    inputs.push(Input::Page_Down)
+                                                } else if buffer[index] == 59 {
+                                                    index += 1;
+                                                    if index + 1 < length {
                                                         if buffer[index] == 50 {
                                                             index += 1;
-                                                            if buffer[index] == 65 {
-                                                                inputs.push(Input::Shift_Up);
-                                                            } else if buffer[index] == 66 {
-                                                                inputs.push(Input::Shift_Down);
-                                                            } else if buffer[index] == 67 {
-                                                                inputs.push(Input::Shift_Right);
-                                                            } else if buffer[index] == 68 {
-                                                                inputs.push(Input::Shift_Left);
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Shift_Page_Up);
                                                             } else {
                                                                 inputs.push(Input::Null);
                                                             }
                                                         } else if buffer[index] == 51 {
                                                             index += 1;
-                                                            if buffer[index] == 65 {
-                                                                inputs.push(Input::Alt_Up);
-                                                            } else if buffer[index] == 66 {
-                                                                inputs.push(Input::Alt_Down);
-                                                            } else if buffer[index] == 67 {
-                                                                inputs.push(Input::Alt_Right);
-                                                            } else if buffer[index] == 68 {
-                                                                inputs.push(Input::Alt_Left);
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Alt_Page_Up);
                                                             } else {
                                                                 inputs.push(Input::Null);
                                                             }
                                                         } else if buffer[index] == 53 {
                                                             index += 1;
-                                                            if buffer[index] == 65 {
-                                                                inputs.push(Input::Ctrl_Up);
-                                                            } else if buffer[index] == 66 {
-                                                                inputs.push(Input::Ctrl_Down);
-                                                            } else if buffer[index] == 67 {
-                                                                inputs.push(Input::Ctrl_Right);
-                                                            } else if buffer[index] == 68 {
-                                                                inputs.push(Input::Ctrl_Left);
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Ctrl_Page_Up);
                                                             } else {
                                                                 inputs.push(Input::Null);
                                                             }
+                                                        } else if buffer[index] == 55 {
+                                                            index += 1;
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Ctrl_Alt_Page_Up);
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null)
                                                         }
-                                                    } else {
-                                                        inputs.push(Input::Null);
-                                                    }
-                                                } else {
-                                                    inputs.push(Input::Null);
-                                                }
-                                            },
-
-                                            // Insert
-                                            50 => {
-                                                index += 1;
-                                                if index < length {
-
-                                                    if buffer[index] == 59 {
-                                                        inputs.push(Input::Alt_Insert);
-                                                        // Skipping over [51, 126]
-                                                        index += 2;
-                                                    } else if buffer[index] == 126 {
-                                                        inputs.push(Input::Insert)
                                                     } else {
                                                         inputs.push(Input::Null)
                                                     }
-
                                                 } else {
                                                     inputs.push(Input::Null)
                                                 }
-                                            },
-
-                                            // Delete command
-                                            51 => {
-                                                index += 1;
-                                                if index < length {
-                                                    
-                                                    match buffer[index] {
-                                                        59 => {
-                                                            if index < length {
-                                                                index += 1;
-
-                                                                match buffer[index] {
-                                                                    50 => {
-                                                                        inputs.push(Input::Shift_Delete);
-                                                                        // Skip the 126 ending
-                                                                        index += 1;
-                                                                    },
-                                                                    51 => {
-                                                                        inputs.push(Input::Alt_Delete);
-                                                                        // Skip the 126 ending
-                                                                        index += 1;
-                                                                    },
-                                                                    53 =>{
-                                                                        inputs.push(Input::Ctrl_Delete);
-                                                                        // Skip the 126 ending
-                                                                        index += 1;
-                                                                    },
-                                                                    _ => inputs.push(Input::Null)
-                                                                }
-                                                            } else {
-                                                                inputs.push(Input::Null);
-                                                            }
-                                                        },
-                                                        126 => inputs.push(Input::Delete),
-                                                        _ => inputs.push(Input::Null)
-                                                    }
-                                                } else {
-                                                    inputs.push(Input::Null);
-                                                    break 'new_input;
-                                                }
-                                            },
-
-                                            // Page Up
-                                            53 => {
-                                                index += 1;
-                                                if index < length {
-                                                    if buffer[index] == 126 {
-                                                        inputs.push(Input::Page_Down)
-                                                    } else if buffer[index] == 59 {
-                                                        index += 1;
-                                                        if index + 1 < length {
-                                                            if buffer[index] == 50 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Shift_Page_Up);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 51 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Alt_Page_Up);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 53 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Ctrl_Page_Up);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 55 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Ctrl_Alt_Page_Up);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else {
-                                                                inputs.push(Input::Null)
-                                                            }
-                                                        } else {
-                                                            inputs.push(Input::Null)
-                                                        }
-                                                    } else {
-                                                        inputs.push(Input::Null)
-                                                    }
-                                                } else {
-                                                    inputs.push(Input::Null);
-                                                }
-                                            },
-                                            // Page Down
-                                            54 => {
-                                                index += 1;
-                                                if index < length {
-                                                    if buffer[index] == 126 {
-                                                        inputs.push(Input::Page_Down)
-                                                    } else if buffer[index] == 59 {
-                                                        index += 1;
-                                                        if index + 1 < length {
-                                                            if buffer[index] == 50 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Shift_Page_Down);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 51 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Alt_Page_Down);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 53 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Ctrl_Page_Down);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else if buffer[index] == 55 {
-                                                                index += 1;
-                                                                if buffer[index] == 126 {
-                                                                    inputs.push(Input::Ctrl_Alt_Page_Down);
-                                                                } else {
-                                                                    inputs.push(Input::Null);
-                                                                }
-                                                            } else {
-                                                                inputs.push(Input::Null)
-                                                            }
-                                                        } else {
-                                                            inputs.push(Input::Null)
-                                                        }
-                                                    } else {
-                                                        inputs.push(Input::Null)
-                                                    }
-                                                } else {
-                                                    inputs.push(Input::Null);
-                                                }
-                                            },
-
-                                            // Mouse Event
-                                            60 => {
-                                                index += 1;
-                                                if index + 5 < length {
-                                                    match buffer[index] {
-                                                        // Vanilla Clicks
-                                                        48..=50 => {
-                                                            let remember_me = index;
-                                                            index += 1;
-
-                                                            if buffer[index] == 59 {
-                                                                index += 1;
-                                                                let (x, inc ) = parse_numbers(buffer, index);
-                                                                index += 1 + inc;
-                                                                let (y, inc) = parse_numbers(buffer, index); 
-                                                                index += inc;
-                                                                if buffer[index] == 77 {
-                                                                    //  It's being Pressed
-                                                                    if buffer[remember_me] == 48 {
-                                                                        inputs.push(Input::LMB_Press{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 49 {
-                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 50 {
-                                                                        inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Null});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                } else if buffer[index] == 109 {
-                                                                    // It's being Released
-                                                                    if buffer[remember_me] == 48 {
-                                                                        inputs.push(Input::LMB_Release{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 49 {
-                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 50 {
-                                                                        inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Null});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                }
-                                                            } else if buffer[index] >= 54 && buffer[index] <= 56 && buffer[index - 1] == 49 {
-                                                                let remember_me = index;
-                                                                index += 2;
-                                                                let (x, inc ) = parse_numbers(buffer, index);
-                                                                index += 1 + inc;
-                                                                let (y, inc) = parse_numbers(buffer, index); 
-                                                                index += inc;
-                                                                if buffer[index] == 77 {
-                                                                    //  It's being Pressed
-                                                                    if buffer[remember_me] == 54 {
-                                                                        inputs.push(Input::LMB_Press{x, y, modifier: Modifier::Ctrl});
-                                                                    } else if buffer[remember_me] == 55 {
-                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Ctrl});
-                                                                    } else if buffer[remember_me] == 56 {
-                                                                        inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Ctrl});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                } else if buffer[index] == 109 {
-                                                                    // It's being Released
-                                                                    if buffer[remember_me] == 54 {
-                                                                        inputs.push(Input::LMB_Release{x, y, modifier: Modifier::Ctrl});
-                                                                    } else if buffer[remember_me] == 55 {
-                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Ctrl});
-                                                                    } else if buffer[remember_me] == 56 {
-                                                                        inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Ctrl});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                }
-
-                                                            } else if buffer[index] == 48 {
-                                                                index += 2;
-                                                                let (x, inc ) = parse_numbers(buffer, index);
-                                                                index += 1 + inc;
-                                                                let (y, inc) = parse_numbers(buffer, index); 
-                                                                index += inc;
-                                                                if buffer[index] == 77 {
-                                                                    inputs.push(Input::RMB_Press{x, y, modifier: Modifier::Alt});
-                                                                } else if buffer[index] == 109 {
-                                                                    inputs.push(Input::RMB_Release{x, y, modifier: Modifier::Alt});
-                                                                }
-                                                            } else {
-                                                                inputs.push(Input::Null);
-                                                            }
-                                                        }
-                                                        // Vanilla Drag
-                                                        51 => {
-                                                            index += 1;
-
-                                                            if buffer[index] > 49 && buffer[index] < 53 {
-                                                                let remember_me = index;
-                                                                index += 2;
-                                                                let (x, inc ) = parse_numbers(buffer, index);
-                                                                index += 1 + inc;
-                                                                let (y, inc) = parse_numbers(buffer, index); 
-                                                                index += inc;
-                                                                if buffer[index] == 77 {
-                                                                    //  It's being Pressed
-                                                                    if buffer[remember_me] == 50 {
-                                                                        inputs.push(Input::LMB_Move{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 51 {
-                                                                        inputs.push(Input::MMB_Move{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 52 {
-                                                                        inputs.push(Input::RMB_Move{x, y, modifier: Modifier::Null});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                }
-                                                            }
-                                                        },
-                                                        // Vanilla Scroll
-                                                        54 => {
-                                                            index += 1;
-
-                                                            if buffer[index] == 52 || buffer[index] == 53 {
-                                                                let remember_me = index;
-                                                                index += 2;
-                                                                let (x, inc ) = parse_numbers(buffer, index);
-                                                                index += 1 + inc;
-                                                                let (y, inc) = parse_numbers(buffer, index); 
-                                                                index += inc;
-                                                                if buffer[index] == 77 {
-                                                                    //  It's being Pressed
-                                                                    if buffer[remember_me] == 52 {
-                                                                        inputs.push(Input::Scroll_Up{x, y, modifier: Modifier::Null});
-                                                                    } else if buffer[remember_me] == 53 {
-                                                                        inputs.push(Input::Scroll_Down{x, y, modifier: Modifier::Null});
-                                                                    } else {
-                                                                        inputs.push(Input::Null);
-                                                                    }
-                                                                }
-
-                                                            }
-                                                        }
-                                                        _ => {inputs.push(Input::Null);}
-                                                    }
-                                                } else {
-                                                    inputs.push(Input::Null);
-                                                    break 'new_input;
-                                                }
-                                            },
-
-                                            // Arrow Inputs
-                                            65..=68 => {
-                                                if buffer[index] == 65 {
-                                                    inputs.push(Input::Up);
-                                                } else if buffer[index] == 66 {
-                                                    inputs.push(Input::Down);
-                                                } else if buffer[index] == 67 {
-                                                    inputs.push(Input::Right);
-                                                } else if buffer[index] == 68 {
-                                                    inputs.push(Input::Left);
-                                                }
-                                            },
-                                            _ => {
+                                            } else {
                                                 inputs.push(Input::Null);
                                             }
-                                        }
+                                        },
+                                        // Page Down
+                                        54 => {
+                                            index += 1;
+                                            if index < length {
+                                                if buffer[index] == 126 {
+                                                    inputs.push(Input::Page_Down)
+                                                } else if buffer[index] == 59 {
+                                                    index += 1;
+                                                    if index + 1 < length {
+                                                        if buffer[index] == 50 {
+                                                            index += 1;
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Shift_Page_Down);
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        } else if buffer[index] == 51 {
+                                                            index += 1;
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Alt_Page_Down);
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        } else if buffer[index] == 53 {
+                                                            index += 1;
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Ctrl_Page_Down);
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        } else if buffer[index] == 55 {
+                                                            index += 1;
+                                                            if buffer[index] == 126 {
+                                                                inputs.push(Input::Ctrl_Alt_Page_Down);
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null)
+                                                        }
+                                                    } else {
+                                                        inputs.push(Input::Null)
+                                                    }
+                                                } else {
+                                                    inputs.push(Input::Null)
+                                                }
+                                            } else {
+                                                inputs.push(Input::Null);
+                                            }
+                                        },
 
-                                    } else {
-                                        inputs.push(Input::Char('['));
-                                        break 'new_input;
+                                        // Mouse Event
+                                        60 => {
+                                            index += 1;
+                                            if index + 5 < length {
+                                                match buffer[index] {
+                                                    // Vanilla Clicks
+                                                    48..=50 => {
+                                                        let remember_me = index;
+                                                        index += 1;
+
+                                                        if buffer[index] == 59 {
+                                                            index += 1;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 48 {
+                                                                    inputs.push(Input::LMB_Press{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 49 {
+                                                                    inputs.push(Input::MMB_Press{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 50 {
+                                                                    inputs.push(Input::RMB_Press{x, y, modifier: Input_Modifier::Null});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 109 {
+                                                                // It's being Released
+                                                                if buffer[remember_me] == 48 {
+                                                                    inputs.push(Input::LMB_Release{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 49 {
+                                                                    inputs.push(Input::MMB_Release{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 50 {
+                                                                    inputs.push(Input::RMB_Release{x, y, modifier: Input_Modifier::Null});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+                                                        } else if buffer[index] >= 54 && buffer[index] <= 56 && buffer[index - 1] == 49 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 54 {
+                                                                    inputs.push(Input::LMB_Press{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else if buffer[remember_me] == 55 {
+                                                                    inputs.push(Input::MMB_Press{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else if buffer[remember_me] == 56 {
+                                                                    inputs.push(Input::RMB_Press{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            } else if buffer[index] == 109 {
+                                                                // It's being Released
+                                                                if buffer[remember_me] == 54 {
+                                                                    inputs.push(Input::LMB_Release{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else if buffer[remember_me] == 55 {
+                                                                    inputs.push(Input::MMB_Release{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else if buffer[remember_me] == 56 {
+                                                                    inputs.push(Input::RMB_Release{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+
+                                                        } else if buffer[index] == 48 {
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                inputs.push(Input::RMB_Press{x, y, modifier: Input_Modifier::Alt});
+                                                            } else if buffer[index] == 109 {
+                                                                inputs.push(Input::RMB_Release{x, y, modifier: Input_Modifier::Alt});
+                                                            }
+                                                        } else {
+                                                            inputs.push(Input::Null);
+                                                        }
+                                                    }
+                                                    // Vanilla Drag
+                                                    51 => {
+                                                        index += 1;
+
+                                                        if buffer[index] > 49 && buffer[index] < 53 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 50 {
+                                                                    inputs.push(Input::LMB_Move{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 51 {
+                                                                    inputs.push(Input::MMB_Move{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 52 {
+                                                                    inputs.push(Input::RMB_Move{x, y, modifier: Input_Modifier::Null});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    // Vanilla or Shift Scroll
+                                                    54 => {
+                                                        index += 1;
+
+                                                        if buffer[index] == 52 || buffer[index] == 53 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 52 {
+                                                                    inputs.push(Input::Scroll_Up{x, y, modifier: Input_Modifier::Null});
+                                                                } else if buffer[remember_me] == 53 {
+                                                                    inputs.push(Input::Scroll_Down{x, y, modifier: Input_Modifier::Null});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+
+                                                        } else if buffer[index] == 56 || buffer[index] == 57 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 56 {
+                                                                    inputs.push(Input::Scroll_Up{x, y, modifier: Input_Modifier::Shift});
+                                                                } else if buffer[remember_me] == 57 {
+                                                                    inputs.push(Input::Scroll_Down{x, y, modifier: Input_Modifier::Shift});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+
+                                                        }
+                                                    }
+                                                    // Alt + Scroll
+                                                    55 => {
+                                                        index += 1;
+
+                                                        if buffer[index] == 50 || buffer[index] == 51 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 50 {
+                                                                    inputs.push(Input::Scroll_Up{x, y, modifier: Input_Modifier::Alt});
+                                                                } else if buffer[remember_me] == 51 {
+                                                                    inputs.push(Input::Scroll_Down{x, y, modifier: Input_Modifier::Alt});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+
+                                                        }
+                                                    }
+                                                    // Ctrl + Scroll
+                                                    56 => {
+                                                        index += 1;
+
+                                                        if buffer[index] == 48 || buffer[index] == 49 {
+                                                            let remember_me = index;
+                                                            index += 2;
+                                                            let (x, inc ) = parse_numbers(buffer, index);
+                                                            index += 1 + inc;
+                                                            let (y, inc) = parse_numbers(buffer, index); 
+                                                            index += inc;
+                                                            if buffer[index] == 77 {
+                                                                //  It's being Pressed
+                                                                if buffer[remember_me] == 48 {
+                                                                    inputs.push(Input::Scroll_Up{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else if buffer[remember_me] == 49 {
+                                                                    inputs.push(Input::Scroll_Down{x, y, modifier: Input_Modifier::Ctrl});
+                                                                } else {
+                                                                    inputs.push(Input::Null);
+                                                                }
+                                                            }
+
+                                                        }
+                                                        
+                                                    }
+                                                    _ => {inputs.push(Input::Null);}
+                                                }
+                                            } else {
+                                                inputs.push(Input::Null);
+                                                break 'new_input;
+                                            }
+                                        },
+
+                                        // Arrow Inputs
+                                        65..=68 => {
+                                            if buffer[index] == 65 {
+                                                inputs.push(Input::Up);
+                                            } else if buffer[index] == 66 {
+                                                inputs.push(Input::Down);
+                                            } else if buffer[index] == 67 {
+                                                inputs.push(Input::Right);
+                                            } else if buffer[index] == 68 {
+                                                inputs.push(Input::Left);
+                                            }
+                                        },
+                                        _ => {
+                                            inputs.push(Input::Null);
+                                        }
                                     }
-                                }
-                                // It's Alt + Char
-                                33..=90 | 92..=126 => {
-                                    inputs.push(Input::Alt_Char(parse_char(buffer[index] - 33)));
-                                }
-                                _ => {
-                                    inputs.push(Input::Null);
+
+                                } else {
+                                    inputs.push(Input::Char('['));
+                                    break 'new_input;
                                 }
                             }
+                            // It's Alt + Char
+                            33..=90 | 92..=126 => {
+                                inputs.push(Input::Alt_Char(parse_char(buffer[index] - 33)));
+                            }
+                            _ => {
+                                inputs.push(Input::Null);
+                            }
+                        }
 
-                        } else {
-                            inputs.push(Input::Escape);
-                            break 'new_input;
-                        };
+                    } else {
+                        inputs.push(Input::Escape);
+                        break 'new_input;
+                    };
 
-                    },
-                    // It's just a character!
-                    33..=126 => {
-                        inputs.push(Input::Char(parse_char(buffer[index] - 33)));
-                    }
-                    _ => {
-                        inputs.push(Input::Null);
-                    }
+                },
+                // It's just a character!
+                33..=126 => {
+                    inputs.push(Input::Char(parse_char(buffer[index] - 33)));
                 }
-                index += 1;
-            } else { break; }
-        }
-
-        return inputs
+                _ => {
+                    inputs.push(Input::Null);
+                }
+            }
+            index += 1;
+        } else { break; }
     }
-    /// If coming from a UTF-8 character subtract 33!
-    /// This is simply a backend for me because I'm
-    /// not smart enough to figure out how Rust and
-    /// Termion do it! 
-    fn parse_char (character: u8) -> char {
-        match character {
-            0 => '!',
-            1 => '"',
-            2 => '#',
-            3 => '$',
-            4 => '%',
-            5 => '&',
-            6 => '\'',
-            7 => '(',
-            8 => ')',
-            9 => '*',
-            10 => '+',
-            11 => ',',
-            12 => '-',
-            13 => '.',
-            14 => '/',
-            // Numbers
-            15 => '0',
-            16 => '1',
-            17 => '2',
-            18 => '3',
-            19 => '4',
-            20 => '5',
-            21 => '6',
-            22 => '7',
-            23 => '8',
-            24 => '9',
-            // Special Characters
-            25 => ':',
-            26 => ';',
-            27 => '<',
-            28 => '=',
-            29 => '>',
-            30 => '?',
-            31 => '@',
-            // Capitalized Characters
-            32 => 'A',
-            33 => 'B',
-            34 => 'C',
-            35 => 'D',
-            36 => 'E',
-            37 => 'F',
-            38 => 'G',
-            39 => 'H',
-            40 => 'I',
-            41 => 'J',
-            42 => 'K',
-            43 => 'L',
-            44 => 'M',
-            45 => 'N',
-            46 => 'O',
-            47 => 'P',
-            48 => 'Q',
-            49 => 'R',
-            50 => 'S',
-            51 => 'T',
-            52 => 'U',
-            53 => 'V',
-            54 => 'W',
-            55 => 'X',
-            56 => 'Y',
-            57 => 'Z',
-            // Special Characters
-            58 => '[',
-            59 => '\\',
-            60 => ']',
-            61 => '^',
-            62 => '_',
-            63 => '`',
-            // Lowercase Characters
-            64 => 'a',
-            65 => 'b',
-            66 => 'c',
-            67 => 'd',
-            68 => 'e',
-            69 => 'f',
-            70 => 'g',
-            71 => 'h',
-            72 => 'i',
-            73 => 'j',
-            74 => 'k',
-            75 => 'l',
-            76 => 'm',
-            77 => 'n',
-            78 => 'o',
-            79 => 'p',
-            80 => 'q',
-            81 => 'r',
-            82 => 's',
-            83 => 't',
-            84 => 'u',
-            85 => 'v',
-            86 => 'w',
-            87 => 'x',
-            88 => 'y',
-            89 => 'z',
-            // Special Characters
-            90 => '{',
-            91 => '|',
-            92 => '}',
-            93 => '~',
-            _ => panic!("{} Is not a number that's covered!", character)
 
-        }
+    return inputs
+}
+/// If coming from a UTF-8 character subtract 33!
+/// This is simply a backend for me because I'm
+/// not smart enough to figure out how Rust and
+/// Termion do it! 
+fn parse_char (character: u8) -> char {
+    match character {
+        0 => '!',
+        1 => '"',
+        2 => '#',
+        3 => '$',
+        4 => '%',
+        5 => '&',
+        6 => '\'',
+        7 => '(',
+        8 => ')',
+        9 => '*',
+        10 => '+',
+        11 => ',',
+        12 => '-',
+        13 => '.',
+        14 => '/',
+        // Numbers
+        15 => '0',
+        16 => '1',
+        17 => '2',
+        18 => '3',
+        19 => '4',
+        20 => '5',
+        21 => '6',
+        22 => '7',
+        23 => '8',
+        24 => '9',
+        // Special Characters
+        25 => ':',
+        26 => ';',
+        27 => '<',
+        28 => '=',
+        29 => '>',
+        30 => '?',
+        31 => '@',
+        // Capitalized Characters
+        32 => 'A',
+        33 => 'B',
+        34 => 'C',
+        35 => 'D',
+        36 => 'E',
+        37 => 'F',
+        38 => 'G',
+        39 => 'H',
+        40 => 'I',
+        41 => 'J',
+        42 => 'K',
+        43 => 'L',
+        44 => 'M',
+        45 => 'N',
+        46 => 'O',
+        47 => 'P',
+        48 => 'Q',
+        49 => 'R',
+        50 => 'S',
+        51 => 'T',
+        52 => 'U',
+        53 => 'V',
+        54 => 'W',
+        55 => 'X',
+        56 => 'Y',
+        57 => 'Z',
+        // Special Characters
+        58 => '[',
+        59 => '\\',
+        60 => ']',
+        61 => '^',
+        62 => '_',
+        63 => '`',
+        // Lowercase Characters
+        64 => 'a',
+        65 => 'b',
+        66 => 'c',
+        67 => 'd',
+        68 => 'e',
+        69 => 'f',
+        70 => 'g',
+        71 => 'h',
+        72 => 'i',
+        73 => 'j',
+        74 => 'k',
+        75 => 'l',
+        76 => 'm',
+        77 => 'n',
+        78 => 'o',
+        79 => 'p',
+        80 => 'q',
+        81 => 'r',
+        82 => 's',
+        83 => 't',
+        84 => 'u',
+        85 => 'v',
+        86 => 'w',
+        87 => 'x',
+        88 => 'y',
+        89 => 'z',
+        // Special Characters
+        90 => '{',
+        91 => '|',
+        92 => '}',
+        93 => '~',
+        _ => panic!("{} Is not a number that's covered!", character)
+
     }
-} 
+}

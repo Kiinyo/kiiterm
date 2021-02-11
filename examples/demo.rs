@@ -1,29 +1,27 @@
 extern crate kiiterm;
 use std::io::*;
 
-use kiiterm::screen::input::*;
+use kiiterm::screen::*;
+use kiiterm::Input;
 fn main() {
     let mut screen = kiiterm::screen::init(100, 5);
 
     loop {
 
-        let mut buffer: Vec<u8> = Vec::new();
+        let debug = debug_inputs(&mut screen);
 
-        screen.inputs.read_to_end(&mut buffer).unwrap();
+        writeln!(
+            screen.context,
+            "{}{}Buffer: {:?}{}Interpreted Inputs: {:?}",
+            termion::clear::All,
+            termion::cursor::Goto(1, 1),
+            debug.1,
+            termion::cursor::Goto(1, 2),
+            debug.0
+        ).unwrap();
 
-        let inputs: Vec<Input> = parse_input(&buffer);
-
-        writeln!(screen.context,
-        "{}{}Buffer: {:?} {}Interpreted Inputs: {:?}",
-        termion::clear::All,
-        termion::cursor::Goto(1, 1),
-        buffer,
-        termion::cursor::Goto(1, 2),
-        inputs)
-       .unwrap();
-
-        if inputs.len() > 0 {
-            match inputs[0] {
+        if debug.0.len() > 0 {
+            match debug.0[0] {
                 Input::Ctrl_Char(c) => {
                     if c == 'C' {break;}
                 },
@@ -33,6 +31,6 @@ fn main() {
 
 
         screen.context.flush().unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(2000));
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
