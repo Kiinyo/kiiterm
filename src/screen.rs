@@ -25,6 +25,8 @@ pub fn init (width: u16, height: u16) -> Screen {
 }
 
 pub mod input {
+    #[allow(non_camel_case_types)]
+    #[derive(Debug)]
     pub enum Key {
         // a..Z
         Char(char),
@@ -96,10 +98,17 @@ pub mod input {
 
         End,
 
+        // Enter
+
+        Enter,
+
+        Alt_Enter,
+
         // Null, junk/invalid/no inputs
 
         Null
     }
+    #[derive(Debug)]
     pub enum Modifier {
         Alt,
         Shift,
@@ -107,7 +116,9 @@ pub mod input {
 
         None
     }
-    /// Follows Enum(x, y, Modifier)
+    /// Follows Enum(x, y, Modifier)    
+    #[allow(non_camel_case_types)]
+    #[derive(Debug)]
     pub enum Mouse {
         // Left Mouse Button
         LMB_Press {x: u16, y: u16, modifier: Modifier},
@@ -129,6 +140,101 @@ pub mod input {
         Scroll_Down {x: u16, y: u16, modifier: Modifier}
     }
 
+    // This takes the buffer from Screen
+    pub fn parse_input (buffer: &Vec<u8>) -> Vec<Key> {
+        let mut inputs = Vec::new();
+        let mut index: usize = 0;
+        let length: usize = buffer.len();
+
+        'new_input: loop {
+            if index < length {
+                match buffer[index] {
+                    // It's Ctrl + A..Z
+                    1..=12 | 14..=26 => {
+                        inputs.push(Key::Ctrl_Char(parse_char(buffer[index] + 31)));
+                    },
+                    13 => {
+                        inputs.push(Key::Enter);
+                    }
+                    // We've hit an escape code
+                    27 => {
+                        if index < length {
+                            index += 1;
+
+                            // Let's figure out what the escape code says!
+                            match buffer[index] {
+                                // It's Ctrl + Alt + Char
+                                1..=12 | 14..=26 => {
+                                    inputs.push(Key::Ctrl_Alt_Char(parse_char(buffer[index] + 31)));
+                                },
+                                13 => {
+                                    inputs.push(Key::Alt_Enter)
+                                },
+                                // Another escape code
+                                27 => {
+                                    inputs.push(Key::Escape);
+                                    continue 'new_input;
+                                },
+                                // A command!
+                                91 => {
+                                    if index < length {
+                                        index += 1;
+
+                                        match buffer[index] {
+
+                                            // Modified arrow keys
+                                            49 => {},
+                                            // Insert
+                                            50 => {},
+                                            // Delete command
+                                            51 => {},
+                                            53 => {},
+                                            54 => {},
+                                            // Mouse Event
+                                            60 => {},
+                                            _ => {
+                                                inputs.push(Key::Null);
+                                            }
+                                        }
+                                        
+                                        index += 1;
+
+                                    } else {
+                                        inputs.push(Key::Char('['));
+                                        break 'new_input;
+                                    }
+                                }
+                                // It's Alt + Char
+                                33..=90 | 92..=126 => {
+                                    inputs.push(Key::Alt_Char(parse_char(buffer[index] - 33)));
+                                }
+                                _ => {
+                                    inputs.push(Key::Null);
+                                }
+                            }
+
+                            index += 1;
+
+                        } else {
+                            inputs.push(Key::Escape);
+                            break;
+                        };
+
+                    },
+                    // It's just a character!
+                    33..=126 => {
+                        inputs.push(Key::Char(parse_char(buffer[index] - 33)));
+                    }
+                    _ => {
+                        inputs.push(Key::Null);
+                    }
+                }
+                index += 1;
+            } else { break; }
+        }
+
+        return inputs
+    }
     /// If coming from a UTF-8 character subtract 33!
     /// This is simply a backend for me because I'm
     /// not smart enough to figure out how Rust and
