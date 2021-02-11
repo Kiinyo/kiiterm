@@ -49,10 +49,10 @@
                 27, // ESC
                 91, 60, // Mouse Event
                 [54, 52..53, 59] [55, 50..51, 59] [56, 48..49, 59] // [Down..Up] [Alt + Down..Up] [Ctrl + Down..Up]
-                51, 57,
-                59,
-                49,
-                77
+                51, 57, // x
+                59, // separator
+                49, // y
+                77 // Press
             ]
 
     Arrow Keys [91]
