@@ -185,7 +185,58 @@ pub mod input {
                                         match buffer[index] {
 
                                             // Modified arrow keys
-                                            49 => {},
+                                            49 => {
+                                                if index + 3 < length {
+                                                    index += 1;
+                                                    if buffer[index] == 59 {
+                                                        index += 1;
+                                                        if buffer[index] == 50 {
+                                                            index += 1;
+                                                            if buffer[index] == 65 {
+                                                                inputs.push(Key::Shift_Up);
+                                                            } else if buffer[index] == 66 {
+                                                                inputs.push(Key::Shift_Down);
+                                                            } else if buffer[index] == 67 {
+                                                                inputs.push(Key::Shift_Right);
+                                                            } else if buffer[index] == 68 {
+                                                                inputs.push(Key::Shift_Left);
+                                                            } else {
+                                                                inputs.push(Key::Null);
+                                                            }
+                                                        } else if buffer[index] == 51 {
+                                                            index += 1;
+                                                            if buffer[index] == 65 {
+                                                                inputs.push(Key::Alt_Up);
+                                                            } else if buffer[index] == 66 {
+                                                                inputs.push(Key::Alt_Down);
+                                                            } else if buffer[index] == 67 {
+                                                                inputs.push(Key::Alt_Right);
+                                                            } else if buffer[index] == 68 {
+                                                                inputs.push(Key::Alt_Left);
+                                                            } else {
+                                                                inputs.push(Key::Null);
+                                                            }
+                                                        } else if buffer[index] == 53 {
+                                                            index += 1;
+                                                            if buffer[index] == 65 {
+                                                                inputs.push(Key::Ctrl_Up);
+                                                            } else if buffer[index] == 66 {
+                                                                inputs.push(Key::Ctrl_Down);
+                                                            } else if buffer[index] == 67 {
+                                                                inputs.push(Key::Ctrl_Right);
+                                                            } else if buffer[index] == 68 {
+                                                                inputs.push(Key::Ctrl_Left);
+                                                            } else {
+                                                                inputs.push(Key::Null);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        inputs.push(Key::Null);
+                                                    }
+                                                } else {
+                                                    inputs.push(Key::Null);
+                                                }
+                                            },
                                             // Insert
                                             50 => {
                                                 if index < length {
@@ -193,8 +244,8 @@ pub mod input {
 
                                                     if buffer[index] == 59 {
                                                         inputs.push(Key::Alt_Insert);
-                                                        // Skipping over [51]
-                                                        index += 1;
+                                                        // Skipping over [51, 126]
+                                                        index += 2;
                                                     } else if buffer[index] == 126 {
                                                         inputs.push(Key::Insert)
                                                     } else {
@@ -249,6 +300,17 @@ pub mod input {
                                             54 => {},
                                             // Mouse Event
                                             60 => {},
+                                            65..=68 => {
+                                                if buffer[index] == 65 {
+                                                    inputs.push(Key::Up);
+                                                } else if buffer[index] == 66 {
+                                                    inputs.push(Key::Down);
+                                                } else if buffer[index] == 67 {
+                                                    inputs.push(Key::Right);
+                                                } else if buffer[index] == 68 {
+                                                    inputs.push(Key::Left);
+                                                }
+                                            },
                                             _ => {
                                                 inputs.push(Key::Null);
                                             }
