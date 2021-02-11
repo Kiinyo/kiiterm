@@ -31,7 +31,7 @@ pub mod input {
         Shift,
         Ctrl,
 
-        None
+        Null
     }
 
 
@@ -150,6 +150,33 @@ pub mod input {
         Null
     }
 
+    fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
+        let mut number: u16 = 0;
+        let mut place: u16 = 1;
+        let mut inc: usize = 0;
+        let length: usize = buffer.len();
+
+        loop {
+           if start < length {
+               match buffer[start] {
+
+                   48..=57 => {
+                       number += (buffer[start] as u16 - 48u16) * place;
+                   },
+                   _ => {
+                       break;
+                   }
+                }
+            } else {
+                break;
+            }
+           start += 1;
+           inc += 1;
+           place *= 10;
+        }
+
+        (number, inc)
+    }
     // This takes the buffer from Screen
     pub fn parse_input (buffer: &Vec<u8>) -> Vec<Input> {
         let mut inputs = Vec::new();
@@ -159,6 +186,7 @@ pub mod input {
         'new_input: loop {
             if index < length {
                 match buffer[index] {
+                   
                     // It's Ctrl + A..Z
                     1..=12 | 14..=26 => {
                         inputs.push(Input::Ctrl_Char(parse_char(buffer[index] + 31)));
@@ -411,6 +439,53 @@ pub mod input {
 
                                             // Mouse Event
                                             60 => {
+                                                index += 1;
+                                                if index + 5 < length {
+                                                    match buffer[index] {
+                                                        // Vanilla Clicks
+                                                        48..=50 => {
+                                                            let remember_me = index;
+                                                            index += 1;
+
+                                                            if buffer[index] == 59 {
+                                                                index += 1;
+                                                                let (x, inc ) = parse_numbers(buffer, index);
+                                                                index += 1 + inc;
+                                                                let (y, inc) = parse_numbers(buffer, index); 
+                                                                index += inc;
+                                                                if buffer[index] == 77 {
+                                                                    //  It's being Pressed
+                                                                    if buffer[remember_me] == 48 {
+                                                                        inputs.push(Input::LMB_Press{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 49 {
+                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 50 {
+                                                                        inputs.push(Input::MMB_Press{x, y, modifier: Modifier::Null});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                } else if buffer[index] == 109 {
+                                                                    // It's being Released
+                                                                    if buffer[remember_me] == 48 {
+                                                                        inputs.push(Input::LMB_Release{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 49 {
+                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Null});
+                                                                    } else if buffer[remember_me] == 50 {
+                                                                        inputs.push(Input::MMB_Release{x, y, modifier: Modifier::Null});
+                                                                    } else {
+                                                                        inputs.push(Input::Null);
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                inputs.push(Input::Null);
+                                                            }
+                                                        }
+                                                        _ => {inputs.push(Input::Null);}
+                                                    }
+                                                } else {
+                                                    inputs.push(Input::Null);
+                                                    break 'new_input;
+                                                }
                                             },
 
                                             // Arrow Inputs
@@ -468,7 +543,7 @@ pub mod input {
     /// This is simply a backend for me because I'm
     /// not smart enough to figure out how Rust and
     /// Termion do it! 
-    pub fn parse_char (character: u8) -> char {
+    fn parse_char (character: u8) -> char {
         match character {
             0 => '!',
             1 => '"',
