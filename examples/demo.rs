@@ -14,10 +14,11 @@ fn main() {
         let inputs: Vec<Key> = parse_input(&buffer);
 
         writeln!(screen.context,
-        "{}{}Buffer: {:?} Interpreted Inputs: {:?}",
+        "{}{}Buffer: {:?} {}Interpreted Inputs: {:?}",
         termion::clear::All,
         termion::cursor::Goto(1, 1),
         buffer,
+        termion::cursor::Goto(1, 2),
         inputs)
        .unwrap();
 
