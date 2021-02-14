@@ -2,6 +2,8 @@
 pub mod terminal;
 /// Screen stuffs
 pub mod screen;
+/// Handling drawing to the screen;
+pub mod graphics;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
