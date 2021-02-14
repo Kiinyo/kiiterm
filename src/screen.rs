@@ -7,11 +7,8 @@ use crate::Input_Modifier;
 pub struct Screen {
     pub width: u16,
     pub height: u16,
-    pub context: termion::input::MouseTerminal<termion::raw::RawTerminal<std::io::Stdout>>,
+    context: termion::input::MouseTerminal<termion::raw::RawTerminal<std::io::Stdout>>,
     inputs: termion::AsyncReader
-}
-pub struct Glyph {
-    pub symbol: char
 }
 /// Create the Screen to be used by nearly everything
 pub fn init (width: u16, height: u16) -> Screen {
@@ -42,6 +39,8 @@ pub fn get_inputs (screen: &mut Screen) -> Vec<Input> {
 
 
 }
+/// Used for troubleshooting difference between the buffer and
+/// the inputs being parsed.
 pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
     use std::io::Read;
 
@@ -52,15 +51,15 @@ pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
 
 
 }
-pub fn draw(screen: &mut Screen, glyph: Glyph, x: u16, y: u16) {
-    writeln!(screen.context, "{}{}",
-        termion::cursor::Goto(x, y),
-        glyph.symbol
-    );
+/// A function for drawing to the screen's buffer.
+pub fn draw_to_buffer(screen: &mut Screen, string: String) {
+    writeln!(screen.context, "{}", string).unwrap();
 }
-
-
-
+/// Draw the buffer to the screen!
+pub fn display_buffer(screen: &mut Screen) {
+    screen.context.flush().unwrap();
+}
+/// Helper function for parsing numbers that appear in the buffer.
 fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
     let mut number: u16 = 0;
     let mut place: u16 = 1;
@@ -92,7 +91,7 @@ fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
 
     (number, inc)
 }
-// This takes the buffer from Screen.inputs and returns kiiterm::input::Input
+//  Helper function to converting buffer into inputs.
 fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
     let mut inputs = Vec::new();
     let mut index: usize = 0;
@@ -649,10 +648,7 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
 
     return inputs
 }
-/// If coming from a UTF-8 character subtract 33!
-/// This is simply a backend for me because I'm
-/// not smart enough to figure out how Rust and
-/// Termion do it! 
+/// Helper function for parsing chars that appear in the buffer.
 fn parse_char (character: u8) -> char {
     match character {
         0 => '!',
