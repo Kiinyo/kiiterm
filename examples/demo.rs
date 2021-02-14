@@ -9,6 +9,7 @@ fn main() {
     loop {
 
         let debug = debug_inputs(&mut screen);
+        let glyph = Glyph {symbol: 'a'};
 
         writeln!(
             screen.context,
@@ -19,6 +20,8 @@ fn main() {
             termion::cursor::Goto(1, 2),
             debug.0
         ).unwrap();
+
+        draw(&mut screen, glyph, 1, 3);
 
         if debug.0.len() > 0 {
             match debug.0[0] {

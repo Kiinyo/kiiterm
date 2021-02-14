@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::terminal;
 use crate::Input;
 use crate::Input_Modifier;
@@ -7,6 +9,9 @@ pub struct Screen {
     pub height: u16,
     pub context: termion::input::MouseTerminal<termion::raw::RawTerminal<std::io::Stdout>>,
     inputs: termion::AsyncReader
+}
+pub struct Glyph {
+    pub symbol: char
 }
 /// Create the Screen to be used by nearly everything
 pub fn init (width: u16, height: u16) -> Screen {
@@ -47,6 +52,15 @@ pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
 
 
 }
+pub fn draw(screen: &mut Screen, glyph: Glyph, x: u16, y: u16) {
+    writeln!(screen.context, "{}{}",
+        termion::cursor::Goto(x, y),
+        glyph.symbol
+    );
+}
+
+
+
 fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
     let mut number: u16 = 0;
     let mut place: u16 = 1;
