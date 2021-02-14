@@ -10,31 +10,43 @@ fn main() {
         let debug = debug_inputs(&mut screen);
 
         let color1 = graphics::parse_color(
-            graphics::Color::White, 
+            graphics::Color::Blue, 
             graphics::Depth::Fg
         );
 
-        let style1 = graphics::parse_style(graphics::Style::Strike_Through);
+        let style1 = graphics::parse_style(graphics::Style::Bold);
 
         let color2 = graphics::parse_color(
             graphics::Color::Red,
             graphics::Depth::Bg
         );
 
-        let buffer = format!("{}{}{}Buffer: {:?}{}{}{}Interpreted Inputs: {:?}{}",
+        let style2 = graphics::parse_style(graphics::Style::Blink);
+
+
+        let buffer = format!("{}{}{}{}Buffer: {:?}{}{}{}{}Interpreted Inputs: {:?}{}",
             "\u{001B}[2J",
             "\u{001B}[1;1H",
             color1,
+            style1,
             debug.1,
+            graphics::RESET,
             "\u{001B}[2;1H",
             color2,
-            style1,
+            style2,
             debug.0,
             graphics::RESET
+        );
+
+        let buffer2 = format!("{}{}{}er",
+        "\u{001B}[2;4H",
+        color1,
+        style1
         );
         
 
         draw_to_buffer(&mut screen, buffer);
+        draw_to_buffer(&mut screen, buffer2);
 
         if debug.0.len() > 0 {
             match debug.0[0] {
