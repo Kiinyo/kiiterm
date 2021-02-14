@@ -1,5 +1,4 @@
 extern crate kiiterm;
-use std::io::*;
 
 use kiiterm::screen::*;
 use kiiterm::Input;
@@ -9,19 +8,17 @@ fn main() {
     loop {
 
         let debug = debug_inputs(&mut screen);
-        let glyph = Glyph {symbol: 'a'};
 
-        writeln!(
-            screen.context,
-            "{}{}Buffer: {:?}{}Interpreted Inputs: {:?}",
-            termion::clear::All,
-            termion::cursor::Goto(1, 1),
+        let buffer = format!("{}{}Buffer: {:?}{}Interpreted Inputs: {:?}",
+            "\u{001B}[2J",
+            "\u{001B}[1;1H",
             debug.1,
-            termion::cursor::Goto(1, 2),
+            "\u{001B}[2;1H",
             debug.0
-        ).unwrap();
+        );
+        
 
-        draw(&mut screen, glyph, 1, 3);
+        draw_to_buffer(&mut screen, buffer);
 
         if debug.0.len() > 0 {
             match debug.0[0] {
@@ -32,8 +29,8 @@ fn main() {
             }
        }
 
+       display_buffer(&mut screen);
 
-        screen.context.flush().unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(100));
+       std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
