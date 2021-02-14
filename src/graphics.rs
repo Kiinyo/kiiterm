@@ -13,10 +13,8 @@ pub enum Style {
     Italics,
     // Underline
     Underline,
-    // Slow blinking
-    Slow_Blink,
-    // Fast blinking
-    Fast_Blink,
+    // Blink
+    Blink,
     // Invert
     Invert_Colors,
     // Invisible
@@ -33,8 +31,7 @@ pub fn parse_style (style: Style) -> String {
         Style::Dim => {code = String::from("\u{001B}[2m");},
         Style::Italics => {code = String::from("\u{001B}[3m");},
         Style::Underline => {code = String::from("\u{001B}[4m");},
-        Style::Slow_Blink => {code = String::from("\u{001B}[5m");},
-        Style::Fast_Blink => {code = String::from("\u{001B}[6m");},
+        Style::Blink => {code = String::from("\u{001B}[5m");},
         Style::Invert_Colors => {code = String::from("\u{001B}[7m");},
         Style::Invisible => {code = String::from("\u{001B}[8m");},
         Style::Strike_Through => {code = String::from("\u{001B}[9m");}
