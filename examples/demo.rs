@@ -1,7 +1,7 @@
 extern crate kiiterm;
-
 use kiiterm::screen::*;
 use kiiterm::Input;
+use kiiterm::graphics;
 fn main() {
     let mut screen = kiiterm::screen::init(100, 5);
 
@@ -9,12 +9,28 @@ fn main() {
 
         let debug = debug_inputs(&mut screen);
 
-        let buffer = format!("{}{}Buffer: {:?}{}Interpreted Inputs: {:?}",
+        let color1 = graphics::parse_color(
+            graphics::Color::White, 
+            graphics::Depth::Fg
+        );
+
+        let style1 = graphics::parse_style(graphics::Style::Strike_Through);
+
+        let color2 = graphics::parse_color(
+            graphics::Color::Red,
+            graphics::Depth::Bg
+        );
+
+        let buffer = format!("{}{}{}Buffer: {:?}{}{}{}Interpreted Inputs: {:?}{}",
             "\u{001B}[2J",
             "\u{001B}[1;1H",
+            color1,
             debug.1,
             "\u{001B}[2;1H",
-            debug.0
+            color2,
+            style1,
+            debug.0,
+            graphics::RESET
         );
         
 

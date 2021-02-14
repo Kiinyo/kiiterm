@@ -1,12 +1,46 @@
+/// Used to reset the style of the screen
 pub const RESET: &str = "\u{001B}[0m";
 /// Styles
+#[allow(non_camel_case_types)]
 pub enum Style {
+    // Bright
+    Bright,
+    // Bold
     Bold,
-    Underscore,
-    Blink
+    // Dim
+    Dim,
+    // Italics
+    Italics,
+    // Underline
+    Underline,
+    // Slow blinking
+    Slow_Blink,
+    // Fast blinking
+    Fast_Blink,
+    // Invert
+    Invert_Colors,
+    // Invisible
+    Invisible,
+    // Strike through
+    Strike_Through
 }
-fn parse_style (style: Style) {
+pub fn parse_style (style: Style) -> String {
+    let code: String;
 
+    match style {
+        Style::Bright => {code = String::from("\u{001B}[0m");}
+        Style::Bold => {code = String::from("\u{001B}[1m");},
+        Style::Dim => {code = String::from("\u{001B}[2m");},
+        Style::Italics => {code = String::from("\u{001B}[3m");},
+        Style::Underline => {code = String::from("\u{001B}[4m");},
+        Style::Slow_Blink => {code = String::from("\u{001B}[5m");},
+        Style::Fast_Blink => {code = String::from("\u{001B}[6m");},
+        Style::Invert_Colors => {code = String::from("\u{001B}[7m");},
+        Style::Invisible => {code = String::from("\u{001B}[8m");},
+        Style::Strike_Through => {code = String::from("\u{001B}[9m");}
+    }
+
+    code
 }
 /// Colors
 pub enum Color {
