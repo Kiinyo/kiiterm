@@ -1,3 +1,4 @@
+pub const RESET: &str = "\u{001B}[0m";
 /// Styles
 pub enum Style {
     Bold,
