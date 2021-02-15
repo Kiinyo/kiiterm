@@ -4,6 +4,8 @@ pub mod terminal;
 pub mod screen;
 /// Handling drawing to the screen.
 pub mod graphics;
+/// Useful functions relating to grids.
+pub mod grid;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
