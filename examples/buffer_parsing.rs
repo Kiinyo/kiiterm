@@ -6,7 +6,7 @@ use kiiterm::graphics;
 
 fn main() {
     // First thing's first, let's create a screen
-    let mut screen = screen::init(100, 5);
+    let mut screen = screen::create(100, 5);
 
     // Now let's create two glyphs that'll hold the debug info
     let mut glyph1 = Glyph {

@@ -12,7 +12,7 @@ pub struct Screen {
     inputs: termion::AsyncReader
 }
 /// Initialize the screen.
-pub fn init (width: u16, height: u16) -> Screen {
+pub fn create (width: u16, height: u16) -> Screen {
     // Let's first clear the terminal
     terminal::clear();
     // Then we'll get the terminal's widith and height after the resize
