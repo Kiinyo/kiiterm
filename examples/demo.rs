@@ -1,52 +1,39 @@
 extern crate kiiterm;
-use kiiterm::screen::*;
+use graphics::Glyph;
+use kiiterm::{screen::*, terminal};
 use kiiterm::Input;
 use kiiterm::graphics;
 fn main() {
     let mut screen = kiiterm::screen::init(100, 5);
 
+    let mut glyph1 = Glyph {
+        symbol: "Debug".to_string(),
+
+        fg_color: graphics::Color::Blue,
+        bg_color: graphics::Color::Black,
+
+        styles: vec![graphics::Style::Blink, graphics::Style::Strike_Through]
+    };
+
+    let mut glyph2 = Glyph {
+        symbol: "Debug".to_string(),
+
+        fg_color: graphics::Color::White,
+        bg_color: graphics::Color::Red,
+
+        styles: vec![graphics::Style::Bold]
+    };
+
     loop {
 
         let debug = debug_inputs(&mut screen);
 
-        let color1 = graphics::parse_color(
-            graphics::Color::Blue, 
-            graphics::Depth::Fg
-        );
-
-        let style1 = graphics::parse_style(graphics::Style::Bold);
-
-        let color2 = graphics::parse_color(
-            graphics::Color::Red,
-            graphics::Depth::Bg
-        );
-
-        let style2 = graphics::parse_style(graphics::Style::Blink);
-
-
-        let buffer = format!("{}{}{}{}Buffer: {:?}{}{}{}{}Interpreted Inputs: {:?}{}",
-            "\u{001B}[2J",
-            graphics::move_cursor(0,0),
-            color1,
-            style1,
-            debug.1,
-            graphics::RESET,
-            graphics::move_cursor(0,1),
-            color2,
-            style2,
-            debug.0,
-            graphics::RESET
-        );
-
-        let buffer2 = format!("{}{}{}er",
-            graphics::move_cursor(3, 1),
-            color1,
-            style1
-        );
+        glyph1.symbol = format!("Buffer: {:?}", debug.1);
+        glyph2.symbol = format!("Inputs: {:?}", debug.0);
         
 
-        draw_to_buffer(&mut screen, buffer);
-        draw_to_buffer(&mut screen, buffer2);
+        graphics::draw_glyph(&mut screen, &glyph1, 0, 0);
+        graphics::draw_glyph(&mut screen, &glyph2, 0, 1);
 
         if debug.0.len() > 0 {
             match debug.0[0] {

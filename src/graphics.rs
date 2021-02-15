@@ -1,3 +1,4 @@
+use crate::screen;
 /// Used to reset the style of the screen
 pub const RESET: &str = "\u{001B}[0m";
 /// Styles
@@ -22,7 +23,7 @@ pub enum Style {
     // Strike through
     Strike_Through
 }
-pub fn parse_style (style: Style) -> String {
+pub fn parse_style (style: &Style) -> String {
     let code: String;
 
     match style {
@@ -56,7 +57,7 @@ pub enum Depth {
     Fg,
     Bg
 }
-pub fn parse_color (color: Color, depth: Depth) -> String {
+pub fn parse_color (color: &Color, depth: &Depth) -> String {
     let mut value: u8;
     let code: String;
     let mut color_tuple: (u8, u8, u8) = (0, 0, 0);
@@ -73,7 +74,7 @@ pub fn parse_color (color: Color, depth: Depth) -> String {
 
         Color::RGB(r, g, b) => {
             value = 38;
-            color_tuple = (r, g, b);
+            color_tuple = (*r, *g, *b);
         }
     }
 
@@ -92,4 +93,28 @@ pub fn parse_color (color: Color, depth: Depth) -> String {
 }
 pub fn move_cursor (x: u16, y: u16) -> String {
     format!("\u{001B}[{};{}H", y + 1, x + 1)
+}
+pub struct Glyph {
+    pub symbol: String,
+
+    pub fg_color: Color,
+    pub bg_color: Color,
+
+    pub styles: Vec<Style>
+}
+pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: u16, y: u16) {
+    let mut code  = move_cursor(x, y);
+
+    for style in glyph.styles.iter() {
+        code = format!("{}{}", code, parse_style(style));
+    }
+
+    code = format!("{}{}{}{}{}", code,
+        parse_color(&glyph.fg_color, &Depth::Fg),
+        parse_color(&glyph.bg_color, &Depth::Bg),
+        glyph.symbol, 
+        RESET
+    );
+
+    screen::draw_to_buffer(screen, code);
 }
