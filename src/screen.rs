@@ -116,7 +116,10 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
     'new_input: loop {
         if index < length {
             match buffer[index] {
-               
+                // It's Ctrl + Spacebar
+                0 => {
+                    inputs.push(Input::Ctrl_Spacebar);
+                },
                 // It's Ctrl + A..Z
                 1..=12 | 14..=26 => {
                     inputs.push(Input::Ctrl_Char(parse_char(buffer[index] + 31)));
@@ -646,6 +649,9 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
                         break 'new_input;
                     };
 
+                },
+                32 => {
+                    inputs.push(Input::Spacebar);
                 },
                 // It's just a character!
                 33..=126 => {

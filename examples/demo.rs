@@ -1,6 +1,6 @@
 extern crate kiiterm;
 use graphics::Glyph;
-use kiiterm::{screen::*, terminal};
+use kiiterm::{screen::*};
 use kiiterm::Input;
 use kiiterm::graphics;
 fn main() {
@@ -28,6 +28,8 @@ fn main() {
 
         let debug = debug_inputs(&mut screen);
 
+        clear_screen(&mut screen);
+
         glyph1.symbol = format!("Buffer: {:?}", debug.1);
         glyph2.symbol = format!("Inputs: {:?}", debug.0);
         
@@ -43,7 +45,6 @@ fn main() {
                 _ => {}
             }
        }
-
        display_buffer(&mut screen);
 
        std::thread::sleep(std::time::Duration::from_millis(100));

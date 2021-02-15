@@ -34,6 +34,12 @@ pub enum Input {
 
         Alt_Backspace,
 
+        // Space
+
+        Spacebar,
+        
+        Ctrl_Spacebar,
+
         // Delete
 
         Delete,
