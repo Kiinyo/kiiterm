@@ -345,3 +345,66 @@ pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y:
 
     grid
 }
+///
+pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: u8, additive: bool) -> Grid {
+    let bucket_target: u8 = grid.tiles[y][x];
+    let mut bucket: u8 = fill;
+
+    if bucket_target != bucket {
+        let width =(grid.width - 1) as usize;
+        let height = (grid.height - 1) as usize;
+
+        let mut current_queue: Vec<(usize, usize)> = vec![(x, y); 1];
+        let mut future_queue: Vec<(usize, usize)> = Vec::new();
+
+        loop {
+            loop {
+                let current_tile: (usize, usize) = current_queue.pop().unwrap();
+
+                // Check left
+                if current_tile.0 > 0 {
+                    if grid.tiles[current_tile.1][current_tile.0 - 1] == bucket_target {
+                        grid.tiles[current_tile.1][current_tile.0 - 1] = bucket;
+                        future_queue.push((current_tile.0 - 1, current_tile.1));
+                    }
+                }
+                // Check right
+                if current_tile.0 < width {
+                    if grid.tiles[current_tile.1][current_tile.0 + 1] == bucket_target {
+                        grid.tiles[current_tile.1][current_tile.0 + 1] = bucket;
+                        future_queue.push((current_tile.0 + 1, current_tile.1));
+                    }
+                }
+                // Check up
+                if current_tile.1 > 0 {
+                    if grid.tiles[current_tile.1 - 1][current_tile.0] == bucket_target {
+                        grid.tiles[current_tile.1 - 1][current_tile.0] = bucket;
+                        future_queue.push((current_tile.0, current_tile.1 - 1));
+                    }
+                }
+                // Check down
+                if current_tile.1 < height {
+                    if grid.tiles[current_tile.1 + 1][current_tile.0] == bucket_target {
+                        grid.tiles[current_tile.1 + 1][current_tile.0] = bucket;
+                        future_queue.push((current_tile.0, current_tile.1 + 1));
+                    }
+                }
+    
+                if current_queue.is_empty() {break;};
+            }
+                
+    
+            // If there's nothing in the queue we're done!
+            if future_queue.is_empty() {break;};
+            // Else transfer the queues
+            current_queue = future_queue.clone();
+            // Increment the bucket if needed!            
+            if additive {bucket += 1};
+            // Prepare the queue for another round! 
+            future_queue.clear();
+        }
+    }
+
+    // Return the grid
+    grid
+}
