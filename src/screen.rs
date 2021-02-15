@@ -70,6 +70,10 @@ pub fn draw_to_buffer(screen: &mut Screen, string: String) {
 pub fn display_buffer(screen: &mut Screen) {
     screen.context.flush().unwrap();
 }
+/// Clear screen
+pub fn clear_screen(screen: &mut Screen) {
+    write!(screen.context, "\u{001B}[2J").unwrap();
+}
 
 /// Helper function for parsing numbers that appear in the buffer.
 fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
