@@ -64,3 +64,143 @@ pub fn create_rectangle (width: u16, height: u16, border: u8, fill: u8) -> Grid 
         tiles,
     }
 }
+/// Create a circle in a grid. 
+pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid {
+    // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
+
+    // Some declarations to make the math faster and simpler
+    let r = radius as usize;
+    let radius_squared = r * r;
+    let diameter = r * 2 + 1;
+    // Skipping a lot of possible heartache
+    if border == background && background == fill {
+        return create_grid(diameter as u16, diameter as u16, background);
+    } else if radius == 0 {
+        return create_grid(1,1, border);
+    } else if radius == 1 {
+        let mut circle = create_grid(diameter as u16, diameter as u16, background);
+
+        circle.tiles[0][1] = border;
+        circle.tiles[2][1] = border;
+        circle.tiles[1][0] = border;
+        circle.tiles[1][2] = border;
+        circle.tiles[1][1] = fill;
+
+        return circle;
+    }
+
+    // Actually making the circle
+    let mut circle: Grid = create_grid(diameter as u16, diameter as u16, background);
+
+    // So basically the way I generate the circle is first I
+    // start with a point at the top of the circle:
+    // x . . . .
+    // . . . . .
+    // . . . . .
+    // . . . . .
+    // c . . . .
+    // then I move over one and check if it's in the circle
+    // by using "x^2 + y^2 < r^2". If it's true nothing happens:
+    // > x . . .
+    // . . . . .
+    // . . . . .
+    // . . . . .
+    // c . . . .
+    // Then I repeat the step  in this case
+    // "x^2 + y^2 < r^2" evaluates to false so I move down until
+    // it's true again:
+    // > v . . .
+    // . . x . .
+    // . . . . .
+    // . . . . .
+    // c . . . .
+    // If I continued this pattern out I'd get:
+    // > v . . .
+    // . . v . .
+    // . . . v .
+    // . . . . v
+    // c . . . x
+    // However if you look you can see that there is symmetry
+    // along 45 degrees so I'm doing twice the work I need to!
+    // Instead I only perform this function until I'm past the
+    // 45 degree point which would be here:
+    // > v . . .
+    // . . v . .
+    // . . . x .
+    // . . . . .
+    // c . . . .
+    // The simple way you could check to see if you're past 45
+    // degrees is to wait until you have to go down more than once
+    // to satisfy "x^2 + y^2 < r^2". But I've found that
+    // "displacement_x + displacement_y * 2 > r" is a fairly
+    // inexpensive check to see if I've gone past halfway!
+    // ---
+    // Once I've figured out 1/8th of the circle I simply
+    // flip and rotate it to draw the other 7/8ths which you
+    // can see blow!
+    // ---
+    // I'm too lazy to type out how I fill the circle as well
+    // but hopefully this diagram explains it. ;~; I start at
+    // dx and go up until the border every time I step over.
+    // > v . . .
+    // 4 3 v . .
+    // 3 2 1 x .
+    // 2 1 . . .
+    // 1 . . . .
+
+    let mut d1: usize = 0; // The first offset
+    let mut d2: usize = 0; // The second offset
+    let threshold: usize = radius_squared - ((r - 1) * (r - 1));
+
+    loop {
+        // Check if I step down
+        if radius_squared - d1 * d1 - (r - d2 - 1) * (r - d2 - 1) < threshold {
+            d2 += 1;
+        }
+
+        // Outline
+
+        // Top (12 o'clock)
+        circle.tiles[d2][r + d1] = border; // Right of 12 o'clock (1 o'clock and going CW)
+        circle.tiles[d2][r - d1] = border; // Left of 12 o'clock (11 o'clock and going CCW)
+        // Bottom (6 o'clock)
+        circle.tiles[diameter - 1 - d2][r + d1] = border; // Right of 6 o'clock (5 o'clock and going CCW)
+        circle.tiles[diameter - 1 - d2][r - d1] = border; // Left of 6 o'clock (6 o'clock and going CW)
+        // Right (3 o'clock)
+        circle.tiles[r - d1][diameter - 1 - d2] = border; // Above 3 o'clock (2 o'clock and going CCW)
+        circle.tiles[r + d1][diameter - 1 - d2] = border; // Above 3 o'clock (4 o'clock and going CW)
+        // Left (9 o'clock)
+        circle.tiles[r - d1][d2] = border; // Above 9 o'clock (10 o'clock and going CW)
+        circle.tiles[r + d1][d2] = border; // Below 9 o'clock (8 o'clock and going CCW)
+
+        // Fill
+
+        if fill != background {
+            for d in 0..r-d2-d1 {
+                circle.tiles[r - d - d1][r + d1] = fill;
+                circle.tiles[r - d - d1][r - d1] = fill;
+
+                circle.tiles[r + d + d1][r + d1] = fill;
+                circle.tiles[r + d + d1][r - d1] = fill;
+
+                circle.tiles[r + d1][r - d - d1] = fill;
+                circle.tiles[r - d1][r - d - d1] = fill;
+
+                circle.tiles[r + d1][r + d + d1] = fill;
+                circle.tiles[r - d1][r + d + d1] = fill;
+            }
+        }
+
+        // Debugging animation
+        //std::thread::sleep(std::time::Duration::from_millis(500));
+        //println!("{:?}", circle);
+
+        // Check if past 45 degrees
+        if d1 + d2 * 2 > r {break;}
+        // Increment
+        d1 += 1;
+    }
+
+    circle
+
+}
