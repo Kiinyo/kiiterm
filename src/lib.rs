@@ -138,7 +138,10 @@ pub enum Input {
 
         Null
 }
-
+/// A list of all the shapes that can be rendered!
+pub enum Shapes {
+    Trapezoid
+}
 #[cfg(test)]
 mod tests {
     #[test]
