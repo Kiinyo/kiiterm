@@ -204,6 +204,41 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
     circle
 
 }
+pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u8, border: u8, background: u8) -> Grid {
+    let length: usize = vertices.len();
+    if length % 2 == 1 || length < 6 {
+        panic!("kiiterm::grid::create_polygon: Invalid number of vertices \"{}\"", length);
+    }
+    // Skipping some possible heartache
+    if border == background && background == fill {
+        return create_grid(width,height, fill);
+    } else if width == 1 || height == 1 {
+        return create_grid(width, height, border);
+    }
+    // Then we can make our polygon
+    let mut polygon = create_grid(width, height, background);
+    // Now let's draw the lines
+    let mut i: usize = 3;
+    loop {
+        if i >= length {break;}
+
+        polygon = draw_line(polygon, 
+            vertices[i - 3], vertices[i - 2], 
+            vertices[i - 1], vertices[i], 
+            border
+        );
+
+        i += 2;
+    }
+    // And close the polygon
+    polygon = draw_line(polygon, 
+        vertices[0], vertices[1], 
+        vertices[length - 2], vertices[length - 1], 
+        border
+    );
+    // To-Do: Fill the polygon
+    polygon
+}
 /// Draw a line on an existing grid
 pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y: u16, fill: u8) -> Grid {
     // Some error handling so it's easier to debug for a user.
@@ -259,8 +294,8 @@ pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y:
         }
 
         for y in 0..y_dif {
-            if (y + off) % inc == 0 {d += tic;}
             grid.tiles[(sy + y) as usize][(sx + d) as usize ] = fill;
+            if (y + off) % inc == 0 {d += tic;}
         }
 
     } else if dir == 0 {
@@ -303,8 +338,8 @@ pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y:
         }
         // Drawing the tiles
         for x in 0..x_dif {
-            if (x + off) % inc == 0 {d += tic;}
             grid.tiles[(sy + d) as usize][(sx + x) as usize] = fill;
+            if (x + off) % inc == 0 {d += tic;}
         }
     }
 
