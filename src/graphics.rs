@@ -90,3 +90,6 @@ pub fn parse_color (color: Color, depth: Depth) -> String {
 
     code
 }
+pub fn move_cursor (x: u16, y: u16) -> String {
+    format!("\u{001B}[{};{}H", y + 1, x + 1)
+}

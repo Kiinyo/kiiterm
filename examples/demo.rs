@@ -26,12 +26,12 @@ fn main() {
 
         let buffer = format!("{}{}{}{}Buffer: {:?}{}{}{}{}Interpreted Inputs: {:?}{}",
             "\u{001B}[2J",
-            "\u{001B}[1;1H",
+            graphics::move_cursor(0,0),
             color1,
             style1,
             debug.1,
             graphics::RESET,
-            "\u{001B}[2;1H",
+            graphics::move_cursor(0,1),
             color2,
             style2,
             debug.0,
@@ -39,9 +39,9 @@ fn main() {
         );
 
         let buffer2 = format!("{}{}{}er",
-        "\u{001B}[2;4H",
-        color1,
-        style1
+            graphics::move_cursor(3, 1),
+            color1,
+            style1
         );
         
 
