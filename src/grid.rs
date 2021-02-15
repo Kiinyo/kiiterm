@@ -204,3 +204,109 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
     circle
 
 }
+/// Draw a line on an existing grid
+pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y: u16, fill: u8) -> Grid {
+    // Some error handling so it's easier to debug for a user.
+    if start_x >= grid.width {
+        panic!("kiiterm::draw_line: \"The starting X is greater than the Grid's width!\"");
+    } else if end_x >= grid.width {
+        panic!("kiiterm::draw_line: \"The ending X is greater than the Grid's width!\"");
+    } else if start_y >= grid.height {
+        panic!("kiiterm::draw_line: \"The starting Y is greater than the Grid's height!\"");
+    } else if end_y >= grid.height {
+        panic!("kiiterm::draw_line: \"The ending Y is greater than the Grid's height!\"");
+    }
+    // Get the differences in x and y
+    let mut x_dif: isize = end_x as isize - start_x as isize;
+    let mut y_dif: isize = end_y as isize - start_y as isize;
+    // Get the overall direction of the line
+    let dir: isize = x_dif.abs() - y_dif.abs();
+
+    let mut d: isize = 0;
+
+    if x_dif == 0 {
+        // It's a vertical line
+        let inc = y_dif.signum();
+        for y in 0..y_dif.abs() + 1 {
+            grid.tiles[(start_y as isize + y * inc) as usize][start_x as usize] = fill;
+        }
+    } else if y_dif == 0 {
+        // It's a vertical line
+        let inc = x_dif.signum();
+        for x in 0..x_dif.abs() + 1 {
+            grid.tiles[start_y as usize][(start_x as isize + x * inc) as usize] = fill;
+        }
+    } else if dir < 0 {
+        // It's vertical
+        let sx: isize;
+        let sy: isize;
+
+        let inc = y_dif / x_dif;
+        let off = inc / 2;
+        let tic = inc.signum();
+        
+        // To-Do: I haven't written code this bad in a v long time
+        // pls fix when it's not 5:04am.
+
+        // Flipping if needed.
+        if y_dif > 0 {
+            sx = start_x as isize;
+            sy = start_y as isize;
+        } else {
+            y_dif = y_dif.abs();
+            sx = end_x as isize;
+            sy = end_y as isize;
+        }
+
+        for y in 0..y_dif {
+            if (y + off) % inc == 0 {d += tic;}
+            grid.tiles[(sy + y) as usize][(sx + d) as usize ] = fill;
+        }
+
+    } else if dir == 0 {
+        // It's diagonal
+
+        // Initializing
+        let sx: isize;
+        let sy: isize;
+        let inc = y_dif.signum();
+        // Flipping if needed.
+        if x_dif > 0 {
+            sx = start_x as isize;
+            sy = start_y as isize;
+        } else {
+            x_dif = x_dif.abs();
+            sx = end_x as isize;
+            sy = end_y as isize;
+        }
+        // Drawing the tiles
+        for x in 0..x_dif {
+            grid.tiles[(sy + x * inc) as usize][(sx + x) as usize] = fill;
+        }
+    } else if dir > 0 {
+        // It's horizontal
+
+        // Initializing
+        let sx: isize;
+        let sy: isize;
+        let inc: isize = x_dif / y_dif;
+        let off: isize = inc / 2;
+        let tic: isize = inc.signum();
+        // Flipping if needed.
+        if x_dif > 0 {
+            sx = start_x as isize;
+            sy = start_y as isize;
+        } else {
+            x_dif = x_dif.abs();
+            sx = end_x as isize;
+            sy = end_y as isize;
+        }
+        // Drawing the tiles
+        for x in 0..x_dif {
+            if (x + off) % inc == 0 {d += tic;}
+            grid.tiles[(sy + d) as usize][(sx + x) as usize] = fill;
+        }
+    }
+
+    grid
+}
