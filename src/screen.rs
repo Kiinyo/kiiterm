@@ -27,6 +27,16 @@ pub fn init (width: u16, height: u16) -> Screen {
     // Finally return the screen to be used
     Screen {width, height, context, inputs}
 }
+
+/// Hide the screen's cursor
+pub fn hide_cursor(screen: &mut Screen) {
+    write!(screen.context,"\u{001B}[?25l").unwrap();
+}
+/// Show the screen's cursor
+pub fn show_cursor(screen: &mut Screen) {
+    write!(screen.context,"\u{001B}[?25h").unwrap();
+}
+
 /// Get a Vec of player Inputs, this returns every interaction
 /// with the window since the last time this function was run.
 pub fn get_inputs (screen: &mut Screen) -> Vec<Input> {
@@ -51,14 +61,16 @@ pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
 
 
 }
+
 /// A function for drawing to the screen's buffer.
 pub fn draw_to_buffer(screen: &mut Screen, string: String) {
-    writeln!(screen.context, "{}", string).unwrap();
+    write!(screen.context, "{}", string).unwrap();
 }
 /// Draw the buffer to the screen!
 pub fn display_buffer(screen: &mut Screen) {
     screen.context.flush().unwrap();
 }
+
 /// Helper function for parsing numbers that appear in the buffer.
 fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
     let mut number: u16 = 0;
@@ -91,7 +103,7 @@ fn parse_numbers (buffer: &Vec<u8>, mut start: usize) -> (u16, usize) {
 
     (number, inc)
 }
-//  Helper function to converting buffer into inputs.
+/// Helper function to converting buffer into inputs.
 fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
     let mut inputs = Vec::new();
     let mut index: usize = 0;
