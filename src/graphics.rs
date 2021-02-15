@@ -3,7 +3,10 @@ use crate::screen;
 pub const RESET: &str = "\u{001B}[0m";
 /// Styles
 #[allow(non_camel_case_types)]
+/// All the different styles possible!
 pub enum Style {
+    Default,
+
     // Bright
     Bright,
     // Bold
@@ -23,10 +26,12 @@ pub enum Style {
     // Strike through
     Strike_Through
 }
-pub fn parse_style (style: &Style) -> String {
+fn parse_style (style: &Style) -> String {
     let code: String;
 
     match style {
+        Style::Default => {code = String::new();},
+
         Style::Bright => {code = String::from("\u{001B}[0m");}
         Style::Bold => {code = String::from("\u{001B}[1m");},
         Style::Dim => {code = String::from("\u{001B}[2m");},
@@ -40,8 +45,10 @@ pub fn parse_style (style: &Style) -> String {
 
     code
 }
-/// Colors
+/// All the different colors possible!
 pub enum Color {
+    Default,
+    
     Black,
     Red,
     Green,
@@ -53,16 +60,18 @@ pub enum Color {
 
     RGB(u8, u8, u8)
 }
-pub enum Depth {
+enum Depth {
     Fg,
     Bg
 }
-pub fn parse_color (color: &Color, depth: &Depth) -> String {
+fn parse_color (color: &Color, depth: &Depth) -> String {
     let mut value: u8;
     let code: String;
     let mut color_tuple: (u8, u8, u8) = (0, 0, 0);
 
     match color {
+        Color::Default => {return String::new()},
+
         Color::Black => value = 30,
         Color::Red => value = 31,
         Color::Green => value = 32,
@@ -94,6 +103,8 @@ pub fn parse_color (color: &Color, depth: &Depth) -> String {
 pub fn move_cursor (x: u16, y: u16) -> String {
     format!("\u{001B}[{};{}H", y + 1, x + 1)
 }
+/// The most basic unit that can be drawn to the terminal,
+/// can be seen as the equivalent to a pixel
 pub struct Glyph {
     pub symbol: String,
 
@@ -102,12 +113,15 @@ pub struct Glyph {
 
     pub styles: Vec<Style>
 }
+/// Draw function to draw glyphs to the screen.
 pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: u16, y: u16) {
     let mut code  = move_cursor(x, y);
 
     for style in glyph.styles.iter() {
         code = format!("{}{}", code, parse_style(style));
     }
+
+    
 
     code = format!("{}{}{}{}{}", code,
         parse_color(&glyph.fg_color, &Depth::Fg),

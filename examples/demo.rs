@@ -10,9 +10,9 @@ fn main() {
         symbol: "Debug".to_string(),
 
         fg_color: graphics::Color::Blue,
-        bg_color: graphics::Color::Black,
+        bg_color: graphics::Color::Default,
 
-        styles: vec![graphics::Style::Blink, graphics::Style::Strike_Through]
+        styles: vec![graphics::Style::Default]
     };
 
     let mut glyph2 = Glyph {
