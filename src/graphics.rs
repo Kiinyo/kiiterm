@@ -1,9 +1,8 @@
 use crate::screen;
-/// Used to reset the style of the screen
-pub const RESET: &str = "\u{001B}[0m";
-/// Styles
+/// Command used to reset the style of the screen.
+const RESET: &str = "\u{001B}[0m";
 #[allow(non_camel_case_types)]
-/// All the different styles possible!
+/// All the different styles possible for glyphs.
 pub enum Style {
     Default,
 
@@ -26,6 +25,7 @@ pub enum Style {
     // Strike through
     Strike_Through
 }
+/// Parsing the style enum into a command for the terminal.
 fn parse_style (style: &Style) -> String {
     let code: String;
 
@@ -45,7 +45,7 @@ fn parse_style (style: &Style) -> String {
 
     code
 }
-/// All the different colors possible!
+/// All the different colors possible for glyphs.
 pub enum Color {
     Default,
     
@@ -60,10 +60,13 @@ pub enum Color {
 
     RGB(u8, u8, u8)
 }
+/// What I use to determine if something's foreground or background.
+/// A helper enum for parse_color.
 enum Depth {
     Fg,
     Bg
 }
+/// Parsing the color enum into a command for the terminal.
 fn parse_color (color: &Color, depth: &Depth) -> String {
     let mut value: u8;
     let code: String;
@@ -100,35 +103,40 @@ fn parse_color (color: &Color, depth: &Depth) -> String {
 
     code
 }
-pub fn move_cursor (x: u16, y: u16) -> String {
+/// Parsing (x, y) coordinates into a command for the terminal.
+fn move_cursor (x: u16, y: u16) -> String {
     format!("\u{001B}[{};{}H", y + 1, x + 1)
 }
 /// The most basic unit that can be drawn to the terminal,
-/// can be seen as the equivalent to a pixel
+/// can be seen as the equivalent to a pixel.
 pub struct Glyph {
+    // The actual String that will be drawn on the screen
     pub symbol: String,
-
+    // The corresponding colors
     pub fg_color: Color,
     pub bg_color: Color,
-
+    // Any styles the glyph might have
     pub styles: Vec<Style>
 }
 /// Draw function to draw glyphs to the screen.
 pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: u16, y: u16) {
+    // Start the code variable we'll be drawing to the buffer
     let mut code  = move_cursor(x, y);
-
+    // Add the style(s) to it
     for style in glyph.styles.iter() {
         code = format!("{}{}", code, parse_style(style));
     }
-
-    
-
+    // Append the rest of the formatting from the glyph
     code = format!("{}{}{}{}{}", code,
+        // Foreground color
         parse_color(&glyph.fg_color, &Depth::Fg),
+        // Background color
         parse_color(&glyph.bg_color, &Depth::Bg),
-        glyph.symbol, 
+        // The actual symbol (or text) to be drawn
+        glyph.symbol,
+        // Setting the terminal back to its default state
         RESET
     );
-
-    screen::draw_to_buffer(screen, code);
+    // Finally draw the code to the buffer
+    screen::buffer_write(screen, code);
 }

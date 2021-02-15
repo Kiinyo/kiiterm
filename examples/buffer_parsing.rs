@@ -6,7 +6,7 @@ use kiiterm::graphics;
 
 fn main() {
     // First thing's first, let's create a screen
-    let mut screen = kiiterm::screen::init(100, 5);
+    let mut screen = screen::init(100, 5);
 
     // Now let's create two glyphs that'll hold the debug info
     let mut glyph1 = Glyph {
@@ -33,7 +33,7 @@ fn main() {
         // Now that we've done that we can safely clear the screen
         // without having to worry about clearing the buffer holding
         // any inputs!
-        screen::clear_screen(&mut screen);
+        screen::clear(&mut screen);
         // Then we manually assign the debug tuple's outputs to
         // a corresponding glyph's symbol to be displayed in a sec!
         glyph1.symbol = format!("Buffer: {:?}", debug.1);
@@ -42,39 +42,33 @@ fn main() {
         graphics::draw_glyph(&mut screen, &glyph1, 0, 0);
         graphics::draw_glyph(&mut screen, &glyph2, 0, 1);
 
-        // Now we've draw to the buffer but we haven't rendered
+        // Now we've draw to the buffer but we haven't buffer_rendered
         // it yet! This function lets us do that!
-        screen::render(&mut screen);
+        screen::buffer_render(&mut screen);
 
 
         // Now we neeed a way to break out of the loop
         // So we'll create a simple input parser that
         // checks of Ctrl + C is the first input pressed.
         // If it is, we'll end the loop!
-
-        // First thing, let's make sure we don't accidentally
-        // try to index an empty input Vec!
-        if debug.0.len() > 0 {
-            // If it's not empty, then let's check the first input!
-            match debug.0[0] {
-                // First let's see if it's Ctrl + a character.
-                Input::Ctrl_Char(c) => {
-                    // If it is, then check if the input is 'C'.
-                    // Remember terminals don't make a distinction
-                    // between Ctrl + C and Ctrl + c so the char in
-                    // Ctrl_Char is always uppercase!
-                    if c == 'C' {
-                        // Finally if it is 'C' we break the loop
-                        break;
-                    }
-                },
-                // If it's anything else we do nothing
-                _ => {}
-            }
-       }
-
-       // Finally let's put the thread to sleep for a second before
-       // looping again so we have time to see the buffer and input!
-       std::thread::sleep(std::time::Duration::from_millis(1000));
+        match debug.0[0] {
+            // First let's see if it's Ctrl + Char.
+            Input::Ctrl_Char(c) => {
+                // If it is, then check if the input is 'C'.
+                // Remember terminals don't make a distinction
+                // between Ctrl + C and Ctrl + c so the char in
+                // Ctrl_Char is always uppercase!
+                if c == 'C' {
+                    // Finally if it is 'C' we break the loop
+                    break;
+                }
+            },
+            // If it's anything else we do nothing
+            _ => {}
+        }
+        
+        // Finally let's put the thread to sleep for a second before
+        // looping again so we have time to see the buffer and input!
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 }

@@ -4,7 +4,7 @@ pub fn dimensions() -> (u16, u16) {
     // way to do it without this.
     termion::terminal_size().unwrap()
 }
-/// Equivalent to running "clear" in the terminal
+/// Equivalent to running "clear" in the terminal, wipes buffers. Not to be confused with screen::clear!
 pub fn clear () {
     // ANSI escape code to run the clear command
     println!("\u{001B}c");

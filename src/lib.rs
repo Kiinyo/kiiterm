@@ -1,12 +1,13 @@
-/// A list of a commands to manipulate the ANSI terminal
+/// A list of a commands relating to the ANSI terminal window.
 pub mod terminal;
-/// Screen stuffs
+/// A list of commands relating to manupulating the screen.
 pub mod screen;
-/// Handling drawing to the screen;
+/// Handling drawing to the screen.
 pub mod graphics;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
+/// A list of all the Modifiers that can be applied to Inputs.
 pub enum Input_Modifier {
     Alt,
     Shift,
@@ -16,6 +17,7 @@ pub enum Input_Modifier {
 }
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
+/// A list of all the possible Inputs the terminal can recognize.
 pub enum Input {
         // a..Z
         Char(char),
@@ -37,7 +39,7 @@ pub enum Input {
         // Space
 
         Spacebar,
-        
+
         Ctrl_Spacebar,
 
         // Delete

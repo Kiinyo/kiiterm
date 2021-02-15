@@ -3,14 +3,15 @@ use std::io::Write;
 use crate::terminal;
 use crate::Input;
 use crate::Input_Modifier;
-/// The structure that holds everything needed to handle inputs and draw to thet terminal
+/// The structure that holds everything needed to handle inputs and draw to thet terminal.
+#[allow(dead_code)]
 pub struct Screen {
-    pub width: u16,
-    pub height: u16,
+    width: u16,
+    height: u16,
     context: termion::input::MouseTerminal<termion::raw::RawTerminal<std::io::Stdout>>,
     inputs: termion::AsyncReader
 }
-/// Create the Screen to be used by nearly everything
+/// Initialize the screen.
 pub fn init (width: u16, height: u16) -> Screen {
     // Let's first clear the terminal
     terminal::clear();
@@ -28,18 +29,18 @@ pub fn init (width: u16, height: u16) -> Screen {
     Screen {width, height, context, inputs}
 }
 
-/// Hide the screen's cursor
-pub fn hide_cursor(screen: &mut Screen) {
+/// Hide the screen's cursor.
+pub fn cursor_hide (screen: &mut Screen) {
     write!(screen.context,"\u{001B}[?25l").unwrap();
 }
-/// Show the screen's cursor
-pub fn show_cursor(screen: &mut Screen) {
+/// Show the screen's cursor.
+pub fn cursor_show (screen: &mut Screen) {
     write!(screen.context,"\u{001B}[?25h").unwrap();
 }
 
 /// Get a Vec of player Inputs, this returns every interaction
 /// with the window since the last time this function was run.
-pub fn get_inputs (screen: &mut Screen) -> Vec<Input> {
+pub fn inputs_get (screen: &mut Screen) -> Vec<Input> {
     use std::io::Read;
 
     let mut buffer: Vec<u8> = Vec::new();
@@ -49,9 +50,9 @@ pub fn get_inputs (screen: &mut Screen) -> Vec<Input> {
 
 
 }
-/// Used for troubleshooting difference between the buffer and
-/// the inputs being parsed.
-pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
+/// Used for troubleshooting how the buffer gets parsed into
+/// inputs.
+pub fn inputs_debug (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
     use std::io::Read;
 
     let mut buffer: Vec<u8> = Vec::new();
@@ -62,16 +63,17 @@ pub fn debug_inputs (screen: &mut Screen) -> (Vec<Input>, Vec<u8>) {
 
 }
 
-/// A function for drawing to the screen's buffer.
-pub fn draw_to_buffer(screen: &mut Screen, string: String) {
+/// A function for writing directly to the screen's buffer. Used by
+/// the graphics module for buffer_rendering.
+pub fn buffer_write (screen: &mut Screen, string: String) {
     write!(screen.context, "{}", string).unwrap();
 }
-/// Draw the buffer to the screen!
-pub fn display_buffer(screen: &mut Screen) {
+/// Draw the current buffer to the screen.
+pub fn buffer_render (screen: &mut Screen) {
     screen.context.flush().unwrap();
 }
-/// Clear screen
-pub fn clear_screen(screen: &mut Screen) {
+/// Clear the screen. Not to be confused with terminal::clear!
+pub fn clear (screen: &mut Screen) {
     write!(screen.context, "\u{001B}[2J").unwrap();
 }
 
@@ -667,6 +669,8 @@ fn parse_buffer (buffer: &Vec<u8>) -> Vec<Input> {
             index += 1;
         } else { break; }
     }
+
+    if length == 0 {inputs.push(Input::Null);}
 
     return inputs
 }
