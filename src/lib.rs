@@ -6,6 +6,8 @@ pub mod screen;
 pub mod graphics;
 /// Useful functions relating to grids.
 pub mod grid;
+/// Everything related to creating a UI!
+pub mod ui;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
