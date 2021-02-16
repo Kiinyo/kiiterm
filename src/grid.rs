@@ -349,6 +349,8 @@ pub fn draw_line (mut grid: Grid, start_x: u16, start_y: u16, end_x: u16, end_y:
 pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: u8, additive: bool) -> Grid {
     let bucket_target: u8 = grid.tiles[y][x];
     let mut bucket: u8 = fill;
+    grid.tiles[y][x] = bucket;          
+    if additive {bucket += 1};
 
     if bucket_target != bucket {
         let width =(grid.width - 1) as usize;

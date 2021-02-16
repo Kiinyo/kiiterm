@@ -13,6 +13,7 @@ fn main() {
     let vertices = vec![2, 0, 7, 0, 9, 6, 0, 6];
     let simple_poly = kiiterm::grid::create_polygon(10, 7, vertices, 2, 1, 0);
     println!("Simple Poly: {:?}", simple_poly);
-    let simple_poly = kiiterm::grid::flood_fill(simple_poly, 5, 3, 3, false);
-    println!("Simple Poly filled: {:?}", simple_poly);
+    let simple_fill = kiiterm::grid::create_grid(11, 7, 0);
+    let simple_fill = kiiterm::grid::flood_fill(simple_fill, 5, 3, 1, true);
+    println!("Grid filled: {:?}", simple_fill);
 }
