@@ -177,8 +177,7 @@ pub fn create_circle (radius:u16, border: u16, fill: u16, background: u16) -> Gr
 
         // Fill
 
-        if fill != background {
-            
+        if fill != background && (r as isize - d2 as isize - d1 as isize) >= 0 {
             for d in 0..r-d2-d1 {
                 circle.tiles[r - d - d1][r + d1] = fill;
                 circle.tiles[r - d - d1][r - d1] = fill;
