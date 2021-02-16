@@ -231,7 +231,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
         polygon = overlay_line(polygon, 
             vertices[i - 3], vertices[i - 2], 
             vertices[i - 1], vertices[i], 
-            border
+            border, &Overlay::Simple
         );
 
         i += 2;
@@ -240,7 +240,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     polygon = overlay_line(polygon, 
         vertices[0], vertices[1], 
         vertices[length - 2], vertices[length - 1], 
-        border
+        border, &Overlay::Simple
     );
     // To-Do: Fill the polygon
     if fill != background {
@@ -262,7 +262,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     }
     polygon
 }
-
+/// All the different overlay types
 pub enum Overlay {
     // Copies overlay tile to recieving tile
     Simple,
@@ -274,7 +274,7 @@ pub enum Overlay {
     Subtract,
     Multiply
 }
-fn parse_overlay (r: usize, o: usize, overlay: Overlay) -> usize {
+fn parse_overlay (r: usize, o: usize, overlay: &Overlay) -> usize {
     match overlay {
         Overlay::Simple => {
             return o;
@@ -297,9 +297,16 @@ fn parse_overlay (r: usize, o: usize, overlay: Overlay) -> usize {
         }
     }
 }
-
+pub fn overlay_grid (mut r_grid: Grid, o_grid: Grid, x: usize, y: usize, overlay: &Overlay) -> Grid {
+    for h in 0..o_grid.height as usize {
+        for w in 0..o_grid.width as usize {
+            r_grid.tiles[y + h][x + w] = parse_overlay(r_grid.tiles[y + h][x + w], o_grid.tiles[h][w], overlay);
+        }
+    }
+    return r_grid;
+}
 /// Draw a line on an existing grid
-pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize) -> Grid {
+pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize, overlay: &Overlay) -> Grid {
     // Some error handling so it's easier to debug for a user.
     if x1 >= grid.width {
         panic!("kiiterm::overlay_line: \"The starting X is greater than the Grid's width!\"");
@@ -322,7 +329,7 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
     if dx == 0 {
         // The line is vertical
         loop {
-            grid.tiles[(y1 as isize + y) as usize][x1] = fill;
+            grid.tiles[(y1 as isize + y) as usize][x1] = parse_overlay(grid.tiles[(y1 as isize + y) as usize][x1],fill, overlay);
             if y + y1 as isize == y2 as isize {break;};
             y += sy;
         }
@@ -330,7 +337,7 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
     } else if dy == 0 {
         // The line is horizontal
         loop {
-            grid.tiles[y1][(x1 as isize + x) as usize] = fill;
+            grid.tiles[y1][(x1 as isize + x) as usize] = parse_overlay(grid.tiles[y1][(x1 as isize + x) as usize], fill, overlay);
             if x + x1 as isize == x2 as isize {break;};
             x += sx;
         }
