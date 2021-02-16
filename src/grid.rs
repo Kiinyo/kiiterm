@@ -1,7 +1,7 @@
 pub struct Grid {
     pub width: u16,
     pub height: u16,
-    pub tiles: Vec<Vec<u8>>
+    pub tiles: Vec<Vec<u16>>
 }
 /// Implimenting debugging because I know I'm going to need it.
 impl std::fmt::Debug for Grid {
@@ -18,11 +18,11 @@ impl std::fmt::Debug for Grid {
 
 }
 /// Create a grid with with width and height and fill it.
-pub fn create_grid (width: u16, height: u16, fill: u8) -> Grid {
+pub fn create_grid (width: u16, height: u16, fill: u16) -> Grid {
     // Loop to fill in everything
-    let mut tiles: Vec<Vec<u8>> = Vec::new();
+    let mut tiles: Vec<Vec<u16>> = Vec::new();
     for _y in 0..height {
-        let mut row: Vec<u8> = Vec::new();
+        let mut row: Vec<u16> = Vec::new();
         for x in 0..width{
             if x >= width {break;}
             row.push(fill); 
@@ -37,8 +37,8 @@ pub fn create_grid (width: u16, height: u16, fill: u8) -> Grid {
     }
 }
 /// Create a rectangle grid
-pub fn create_rectangle (width: u16, height: u16, border: u8, fill: u8) -> Grid {
-    let mut tiles: Vec<Vec<u8>> = Vec::new();
+pub fn create_rectangle (width: u16, height: u16, border: u16, fill: u16) -> Grid {
+    let mut tiles: Vec<Vec<u16>> = Vec::new();
     let w_usize:usize = width as usize;
     if border == fill {
         for _y in 0..height {
@@ -48,10 +48,10 @@ pub fn create_rectangle (width: u16, height: u16, border: u8, fill: u8) -> Grid 
     } else {
         for y in 0..height {
             if y == 0 || y == height - 1 {
-                let row: Vec<u8> = vec![border; w_usize];
+                let row: Vec<u16> = vec![border; w_usize];
                 tiles.push(row);
             } else {
-                let mut row: Vec<u8> = vec![fill; w_usize];
+                let mut row: Vec<u16> = vec![fill; w_usize];
                 row[0] = border;
                 row[w_usize - 1] = border;
                 tiles.push(row);
@@ -65,7 +65,7 @@ pub fn create_rectangle (width: u16, height: u16, border: u8, fill: u8) -> Grid 
     }
 }
 /// Create a circle in a grid. 
-pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid {
+pub fn create_circle (radius:u16, border: u16, fill: u16, background: u16) -> Grid {
     // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
 
     // Some declarations to make the math faster and simpler
@@ -152,6 +152,8 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
     let mut d2: usize = 0; // The second offset
     let threshold: usize = radius_squared - ((r - 1) * (r - 1));
 
+    let mut flag:bool = false;
+
     loop {
         // Check if I step down
         if radius_squared - d1 * d1 - (r - d2 - 1) * (r - d2 - 1) < threshold {
@@ -176,6 +178,7 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
         // Fill
 
         if fill != background {
+            
             for d in 0..r-d2-d1 {
                 circle.tiles[r - d - d1][r + d1] = fill;
                 circle.tiles[r - d - d1][r - d1] = fill;
@@ -196,7 +199,9 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
         //println!("{:?}", circle);
 
         // Check if past 45 degrees
-        if d1 + d2 * 2 > r {break;}
+        println!("{} > {}", d1 + d2 * 2,r);
+        if flag {break;}
+        if d1 + d2 * 2 > r {flag = true;}
         // Increment
         d1 += 1;
     }
@@ -204,7 +209,9 @@ pub fn create_circle (radius:u16, border: u8, fill: u8, background: u8) -> Grid 
     circle
 
 }
-pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u8, border: u8, background: u8) -> Grid {
+/// Create a grid containing a polygon, fill works by starting at (width/2, 0) and then going down until a border is encountered
+/// once the border is encountered, the next background tile is flood filled.
+pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, border: u16, background: u16) -> Grid {
     let length: usize = vertices.len();
     if length % 2 == 1 || length < 6 {
         panic!("kiiterm::grid::create_polygon: Invalid number of vertices \"{}\"", length);
@@ -237,10 +244,27 @@ pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u8, bo
         border
     );
     // To-Do: Fill the polygon
+    if fill != background {
+        let x = width / 2;
+        let mut flag = false;
+        for y in 0..height {
+            if flag == false {
+                if polygon.tiles[y as usize][x as usize] == border {
+                    flag = true;
+                }
+            } else {
+                if polygon.tiles[y as usize][x as usize] == background {
+                    polygon = flood_fill(polygon, x as usize, y as usize, fill, false);
+                    break;
+                }
+            }
+        }
+
+    }
     polygon
 }
 /// Draw a line on an existing grid
-pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u8) -> Grid {
+pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16) -> Grid {
     // Some error handling so it's easier to debug for a user.
     if x1 >= grid.width {
         panic!("kiiterm::draw_line: \"The starting X is greater than the Grid's width!\"");
@@ -330,10 +354,10 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u8) 
     grid
 
 }
-///
-pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: u8, additive: bool) -> Grid {
-    let bucket_target: u8 = grid.tiles[y][x];
-    let mut bucket: u8 = fill;
+/// Additive can be used for pathfinding
+pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: u16, additive: bool) -> Grid {
+    let bucket_target: u16 = grid.tiles[y][x];
+    let mut bucket: u16 = fill;
     grid.tiles[y][x] = bucket;          
     if additive {bucket += 1};
 
