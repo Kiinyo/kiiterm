@@ -19,7 +19,7 @@ impl std::fmt::Debug for Grid {
 }
 
 /// Create a grid with with width and height and fill it.
-pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
+fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     // Loop to fill in everything
     let mut tiles: Vec<Vec<usize>> = Vec::new();
     for _y in 0..height {
@@ -38,7 +38,7 @@ pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     }
 }
 /// Create a rectangle grid
-pub fn create_rectangle (width: usize, height: usize, border: usize, fill: usize) -> Grid {
+fn create_rectangle (width: usize, height: usize, border: usize, fill: usize) -> Grid {
     let mut tiles: Vec<Vec<usize>> = Vec::new();
     let w_usize:usize = width;
     if border == fill {
@@ -66,7 +66,7 @@ pub fn create_rectangle (width: usize, height: usize, border: usize, fill: usize
     }
 }
 /// Create a circle in a grid. 
-pub fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
+fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
     // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
 
     // Some declarations to make the math faster and simpler
@@ -200,7 +200,6 @@ pub fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
         //println!("{:?}", circle);
 
         // Check if past 45 degrees
-        println!("{} > {}", d1 + d2 * 2,r);
         if flag {break;}
         if d1 + d2 * 2 > r {flag = true;}
         // Increment
@@ -210,8 +209,7 @@ pub fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
     circle
 
 }
-/// Create a grid containing a polygon, fill works by starting at (width/2, 0) and then going down until a border is encountered.
-/// Once the border is encountered, the next background tile is flood filled.
+/// Create a grid containing a polygon with specified verts
 pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: usize, border: usize) -> Grid {
     let background:usize = 0;
     let length: usize = vertices.len();
@@ -265,14 +263,17 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     }
     polygon
 }
-/// All the shapes we can create on a grid!
+/// All the possible shapes
 #[allow(non_camel_case_types)]
 pub enum Shape {
     // Isosceles Triangle
     Right_Iso_Tri,
     Left_Iso_Tri,
     Up_Iso_Tri,
-    Down_Iso_Tri
+    Down_Iso_Tri,
+
+    Circle,
+    Rectangle
 }
 fn parse_shape(shape: Shape, width: usize, height: usize) -> Vec<usize> {
     let w = width - 1;
@@ -306,13 +307,25 @@ fn parse_shape(shape: Shape, width: usize, height: usize) -> Vec<usize> {
                 w / 2, h
             ]
         }
+        _ => panic!("Wrong function dummy!")
     }
 }
+/// Create a grid containing a grid::Shape
 pub fn create_shape (shape: Shape, width: usize, height: usize, fill: usize, border: usize) -> Grid {
-    let vertices: Vec<usize> = parse_shape(shape, width, height);
-    return create_polygon(width, height, vertices, fill, border)
+    match shape {
+        Shape::Circle => {
+            return create_circle(width / 2, border, fill)
+        },
+        Shape::Rectangle => {
+            return create_rectangle(width,height, border,fill)
+        },
+        _ => {
+            let vertices: Vec<usize> = parse_shape(shape, width, height);
+            return create_polygon(width, height, vertices, fill, border)
+        }
+    }
 }
-/// All the different overlay types
+/// All the different overlay types.
 pub enum Overlay {
     // Copies overlay tile to recieving tile
     Simple,
@@ -349,7 +362,7 @@ fn parse_overlay (r: usize, o: usize, overlay: &Overlay) -> usize {
     }
 }
 
-/// Overlays a grid (o_grid) on a recieving grid (r_grid)
+/// Overlays a grid (o_grid) on a recieving grid (r_grid).
 pub fn overlay_grid (mut r_grid: Grid, o_grid: Grid, x: usize, y: usize, overlay: &Overlay) -> Grid {
     for h in 0..o_grid.height as usize {
         for w in 0..o_grid.width as usize {
@@ -358,7 +371,7 @@ pub fn overlay_grid (mut r_grid: Grid, o_grid: Grid, x: usize, y: usize, overlay
     }
     return r_grid;
 }
-/// Draw a line on an existing grid
+/// Draw a line on an existing grid.
 pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize, overlay: &Overlay) -> Grid {
     // Some error handling so it's easier to debug for a user.
     if x1 >= grid.width {
@@ -449,7 +462,7 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
     grid
 
 }
-/// Fill a grid at x, y. Similar to a bucket tool in a drawing program. Additive can be used for pathfinding
+/// Fill a grid at (x, y).
 pub fn overlay_flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bool) -> Grid {
     let bucket_target: usize = grid.tiles[y][x];
     let mut bucket: usize = fill;
