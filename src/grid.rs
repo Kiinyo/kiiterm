@@ -1,7 +1,7 @@
 pub struct Grid {
-    pub width: u16,
-    pub height: u16,
-    pub tiles: Vec<Vec<u16>>
+    pub width: usize,
+    pub height: usize,
+    pub tiles: Vec<Vec<usize>>
 }
 /// Implimenting debugging because I know I'm going to need it.
 impl std::fmt::Debug for Grid {
@@ -18,11 +18,11 @@ impl std::fmt::Debug for Grid {
 
 }
 /// Create a grid with with width and height and fill it.
-pub fn create_grid (width: u16, height: u16, fill: u16) -> Grid {
+pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     // Loop to fill in everything
-    let mut tiles: Vec<Vec<u16>> = Vec::new();
+    let mut tiles: Vec<Vec<usize>> = Vec::new();
     for _y in 0..height {
-        let mut row: Vec<u16> = Vec::new();
+        let mut row: Vec<usize> = Vec::new();
         for x in 0..width{
             if x >= width {break;}
             row.push(fill); 
@@ -37,9 +37,9 @@ pub fn create_grid (width: u16, height: u16, fill: u16) -> Grid {
     }
 }
 /// Create a rectangle grid
-pub fn create_rectangle (width: u16, height: u16, border: u16, fill: u16) -> Grid {
-    let mut tiles: Vec<Vec<u16>> = Vec::new();
-    let w_usize:usize = width as usize;
+pub fn create_rectangle (width: usize, height: usize, border: usize, fill: usize) -> Grid {
+    let mut tiles: Vec<Vec<usize>> = Vec::new();
+    let w_usize:usize = width;
     if border == fill {
         for _y in 0..height {
             let row = vec![fill; w_usize];
@@ -48,10 +48,10 @@ pub fn create_rectangle (width: u16, height: u16, border: u16, fill: u16) -> Gri
     } else {
         for y in 0..height {
             if y == 0 || y == height - 1 {
-                let row: Vec<u16> = vec![border; w_usize];
+                let row: Vec<usize> = vec![border; w_usize];
                 tiles.push(row);
             } else {
-                let mut row: Vec<u16> = vec![fill; w_usize];
+                let mut row: Vec<usize> = vec![fill; w_usize];
                 row[0] = border;
                 row[w_usize - 1] = border;
                 tiles.push(row);
@@ -65,20 +65,20 @@ pub fn create_rectangle (width: u16, height: u16, border: u16, fill: u16) -> Gri
     }
 }
 /// Create a circle in a grid. 
-pub fn create_circle (radius:u16, border: u16, fill: u16, background: u16) -> Grid {
+pub fn create_circle (radius:usize, border: usize, fill: usize, background: usize) -> Grid {
     // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
 
     // Some declarations to make the math faster and simpler
-    let r = radius as usize;
+    let r = radius;
     let radius_squared = r * r;
     let diameter = r * 2 + 1;
     // Skipping a lot of possible heartache
     if border == background && background == fill {
-        return create_grid(diameter as u16, diameter as u16, background);
+        return create_grid(diameter, diameter, background);
     } else if radius == 0 {
         return create_grid(1,1, border);
     } else if radius == 1 {
-        let mut circle = create_grid(diameter as u16, diameter as u16, background);
+        let mut circle = create_grid(diameter, diameter, background);
 
         circle.tiles[0][1] = border;
         circle.tiles[2][1] = border;
@@ -90,7 +90,7 @@ pub fn create_circle (radius:u16, border: u16, fill: u16, background: u16) -> Gr
     }
 
     // Actually making the circle
-    let mut circle: Grid = create_grid(diameter as u16, diameter as u16, background);
+    let mut circle: Grid = create_grid(diameter, diameter, background);
 
     // So basically the way I generate the circle is first I
     // start with a point at the top of the circle:
@@ -208,9 +208,9 @@ pub fn create_circle (radius:u16, border: u16, fill: u16, background: u16) -> Gr
     circle
 
 }
-/// Create a grid containing a polygon, fill works by starting at (width/2, 0) and then going down until a border is encountered
-/// once the border is encountered, the next background tile is flood filled.
-pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, border: u16, background: u16) -> Grid {
+/// Create a grid containing a polygon, fill works by starting at (width/2, 0) and then going down until a border is encountered.
+/// Once the border is encountered, the next background tile is flood filled.
+pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: usize, border: usize, background: usize) -> Grid {
     let length: usize = vertices.len();
     if length % 2 == 1 || length < 6 {
         panic!("kiiterm::grid::create_polygon: Invalid number of vertices \"{}\"", length);
@@ -228,7 +228,7 @@ pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, b
     loop {
         if i >= length {break;}
 
-        polygon = draw_line(polygon, 
+        polygon = overlay_line(polygon, 
             vertices[i - 3], vertices[i - 2], 
             vertices[i - 1], vertices[i], 
             border
@@ -237,7 +237,7 @@ pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, b
         i += 2;
     }
     // And close the polygon
-    polygon = draw_line(polygon, 
+    polygon = overlay_line(polygon, 
         vertices[0], vertices[1], 
         vertices[length - 2], vertices[length - 1], 
         border
@@ -248,12 +248,12 @@ pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, b
         let mut flag = false;
         for y in 0..height {
             if flag == false {
-                if polygon.tiles[y as usize][x as usize] == border {
+                if polygon.tiles[y][x] == border {
                     flag = true;
                 }
             } else {
-                if polygon.tiles[y as usize][x as usize] == background {
-                    polygon = flood_fill(polygon, x as usize, y as usize, fill, false);
+                if polygon.tiles[y][x] == background {
+                    polygon = overlay_flood_fill(polygon, x, y, fill, false);
                     break;
                 }
             }
@@ -262,17 +262,29 @@ pub fn create_polygon (width: u16, height: u16, vertices: Vec<u16>, fill: u16, b
     }
     polygon
 }
+
+pub enum Overlay {
+    // Copies overlay tile to recieving tile
+    Simple,
+    // Copies the overlay tile to the recieving tile if the overlay tile != 0
+    Transparent,
+
+    // Performs the operation to the recieving tile using the overlay tile.
+    Add,
+    Subtract,
+    Multiply
+}
 /// Draw a line on an existing grid
-pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16) -> Grid {
+pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize) -> Grid {
     // Some error handling so it's easier to debug for a user.
     if x1 >= grid.width {
-        panic!("kiiterm::draw_line: \"The starting X is greater than the Grid's width!\"");
+        panic!("kiiterm::overlay_line: \"The starting X is greater than the Grid's width!\"");
     } else if x2 >= grid.width {
-        panic!("kiiterm::draw_line: \"The ending X is greater than the Grid's width!\"");
+        panic!("kiiterm::overlay_line: \"The ending X is greater than the Grid's width!\"");
     } else if y1 >= grid.height {
-        panic!("kiiterm::draw_line: \"The starting Y is greater than the Grid's height!\"");
+        panic!("kiiterm::overlay_line: \"The starting Y is greater than the Grid's height!\"");
     } else if y2 >= grid.height {
-        panic!("kiiterm::draw_line: \"The ending Y is greater than the Grid's height!\"");
+        panic!("kiiterm::overlay_line: \"The ending Y is greater than the Grid's height!\"");
     };
     // Variables for X
     let dx: isize = x2 as isize - x1 as isize;
@@ -286,7 +298,7 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16)
     if dx == 0 {
         // The line is vertical
         loop {
-            grid.tiles[(y1 as isize + y) as usize][x1 as usize] = fill;
+            grid.tiles[(y1 as isize + y) as usize][x1] = fill;
             if y + y1 as isize == y2 as isize {break;};
             y += sy;
         }
@@ -294,7 +306,7 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16)
     } else if dy == 0 {
         // The line is horizontal
         loop {
-            grid.tiles[y1 as usize][(x1 as isize + x) as usize] = fill;
+            grid.tiles[y1][(x1 as isize + x) as usize] = fill;
             if x + x1 as isize == x2 as isize {break;};
             x += sx;
         }
@@ -314,7 +326,7 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16)
             x += sx;
             // Check if we're done
             if x + x1 as isize == x2 as isize {
-                grid.tiles[y2 as usize][x2 as usize] = fill;
+                grid.tiles[y2][x2] = fill;
                 break;
             };
             // Inc
@@ -353,16 +365,16 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u16)
     grid
 
 }
-/// Additive can be used for pathfinding
-pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: u16, additive: bool) -> Grid {
-    let bucket_target: u16 = grid.tiles[y][x];
-    let mut bucket: u16 = fill;
+/// Fill a grid at x, y. Similar to a bucket tool in a drawing program. Additive can be used for pathfinding
+pub fn overlay_flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bool) -> Grid {
+    let bucket_target: usize = grid.tiles[y][x];
+    let mut bucket: usize = fill;
     grid.tiles[y][x] = bucket;          
     if additive {bucket += 1};
 
     if bucket_target != bucket {
-        let width =(grid.width - 1) as usize;
-        let height = (grid.height - 1) as usize;
+        let width = grid.width - 1;
+        let height = grid.height - 1;
 
         let mut current_queue: Vec<(usize, usize)> = vec![(x, y); 1];
         let mut future_queue: Vec<(usize, usize)> = Vec::new();
