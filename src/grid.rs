@@ -17,6 +17,7 @@ impl std::fmt::Debug for Grid {
     }
 
 }
+
 /// Create a grid with with width and height and fill it.
 pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     // Loop to fill in everything
@@ -65,13 +66,14 @@ pub fn create_rectangle (width: usize, height: usize, border: usize, fill: usize
     }
 }
 /// Create a circle in a grid. 
-pub fn create_circle (radius:usize, border: usize, fill: usize, background: usize) -> Grid {
+pub fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
     // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
 
     // Some declarations to make the math faster and simpler
-    let r = radius;
-    let radius_squared = r * r;
-    let diameter = r * 2 + 1;
+    let r:usize = radius;
+    let radius_squared:usize = r * r;
+    let diameter:usize = r * 2 + 1;
+    let background:usize = 0;
     // Skipping a lot of possible heartache
     if border == background && background == fill {
         return create_grid(diameter, diameter, background);
@@ -210,7 +212,8 @@ pub fn create_circle (radius:usize, border: usize, fill: usize, background: usiz
 }
 /// Create a grid containing a polygon, fill works by starting at (width/2, 0) and then going down until a border is encountered.
 /// Once the border is encountered, the next background tile is flood filled.
-pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: usize, border: usize, background: usize) -> Grid {
+pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: usize, border: usize) -> Grid {
+    let background:usize = 0;
     let length: usize = vertices.len();
     if length % 2 == 1 || length < 6 {
         panic!("kiiterm::grid::create_polygon: Invalid number of vertices \"{}\"", length);
@@ -262,6 +265,53 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     }
     polygon
 }
+/// All the shapes we can create on a grid!
+#[allow(non_camel_case_types)]
+pub enum Shape {
+    // Isosceles Triangle
+    Right_Iso_Tri,
+    Left_Iso_Tri,
+    Up_Iso_Tri,
+    Down_Iso_Tri
+}
+fn parse_shape(shape: Shape, width: usize, height: usize) -> Vec<usize> {
+    let w = width - 1;
+    let h = height - 1;
+    match shape {
+        Shape::Right_Iso_Tri => {
+            return vec![
+                0, 0,
+                w, h / 2,
+                0, h
+            ]
+        }
+        Shape::Left_Iso_Tri => {
+            return vec![
+                w, 0,
+                w, h,
+                w,  h / 2
+            ]
+        }
+        Shape::Up_Iso_Tri => {
+            return vec![
+                w / 2, 0,
+                w, h,
+                0, h
+            ]
+        }
+        Shape::Down_Iso_Tri => {
+            return vec![
+                0, 0,
+                w, 0,
+                w / 2, h
+            ]
+        }
+    }
+}
+pub fn create_shape (shape: Shape, width: usize, height: usize, fill: usize, border: usize) -> Grid {
+    let vertices: Vec<usize> = parse_shape(shape, width, height);
+    return create_polygon(width, height, vertices, fill, border)
+}
 /// All the different overlay types
 pub enum Overlay {
     // Copies overlay tile to recieving tile
@@ -274,6 +324,7 @@ pub enum Overlay {
     Subtract,
     Multiply
 }
+/// Helper function to parse overlays
 fn parse_overlay (r: usize, o: usize, overlay: &Overlay) -> usize {
     match overlay {
         Overlay::Simple => {
@@ -297,6 +348,8 @@ fn parse_overlay (r: usize, o: usize, overlay: &Overlay) -> usize {
         }
     }
 }
+
+/// Overlays a grid (o_grid) on a recieving grid (r_grid)
 pub fn overlay_grid (mut r_grid: Grid, o_grid: Grid, x: usize, y: usize, overlay: &Overlay) -> Grid {
     for h in 0..o_grid.height as usize {
         for w in 0..o_grid.width as usize {
