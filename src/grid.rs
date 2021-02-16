@@ -251,27 +251,51 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u8) 
     } else if y2 >= grid.height {
         panic!("kiiterm::draw_line: \"The ending Y is greater than the Grid's height!\"");
     };
-    // Get the differences in x and y
+    // Variables for X
     let dx: isize = x2 as isize - x1 as isize;
     let sx: isize = dx.signum();
-    let mut x: isize = x1 as isize;
-
+    let mut x: isize = 0;
+    // Variables for Y
     let dy: isize = y2 as isize - y1 as isize;
     let sy: isize = dy.signum();
-    let mut y: isize = y1 as isize;
-    // Get the "slope"
+    let mut y: isize = 0;
+    // Check for vertical and horizonal lines
+    if dx == 0 {
+        // The line is vertical
+        loop {
+            grid.tiles[(y1 as isize + y) as usize][x1 as usize] = fill;
+            if y + y1 as isize == y2 as isize {break;};
+            y += sy;
+        }
+        return grid;
+    } else if dy == 0 {
+        // The line is horizontal
+        loop {
+            grid.tiles[y1 as usize][(x1 as isize + x) as usize] = fill;
+            if x + x1 as isize == x2 as isize {break;};
+            x += sx;
+        }
+        return grid;
+    }
+    // How many times we need to step up
     let m: isize = dx.abs() - dy.abs();
     // Determine the direction
     if m > 0 {
+        // How often we need to step up
+        let slope = dy as f32 / dx as f32;
         // The line is more horizontal
         loop {
             // Fill in the tile!
-            grid.tiles[y as usize][x as usize] = fill;
-            // Check if we're done
-            if x == x2 as isize {break;};
-            // Increment if not!
+            grid.tiles[(y + y1 as isize) as usize][(x + x1 as isize) as usize] = fill;
+            // Increment!
             x += sx;
-            if x % m == 0 {y += sy;};
+            // Check if we're done
+            if x + x1 as isize == x2 as isize {
+                grid.tiles[y2 as usize][x2 as usize] = fill;
+                break;
+            };
+            // Inc
+            if (slope * x as f32).abs() > (y as f32).abs() {y += sy;};
         }
     } else if m == 0 {
         // The line is diagonal and we can't divide by zero!
@@ -285,15 +309,21 @@ pub fn draw_line (mut grid: Grid, x1: u16, y1: u16, x2: u16, y2: u16, fill: u8) 
             y += sy;
         }
     } else {
+        // How often we need to step up
+        let slope = dx as f32 / dy as f32;
         // The line is more vertical
         loop {
             // Fill in the tile!
-            grid.tiles[y as usize][x as usize] = fill;
-            // Check if we're done
-            if y == y2 as isize {break;};
+            grid.tiles[(y + y1 as isize) as usize][(x + x1 as isize) as usize] = fill;
             // Increment if not!
             y += sy;
-            if y % m == 0 {x += sx;};
+            // Check if we're done
+            if y + y1 as isize == y2 as isize {
+                grid.tiles[y2 as usize][x2 as usize] = fill;
+                break;
+            };
+            // Inc
+            if (slope * y as f32).abs() > (x as f32).abs() {x += sx;};
         }
     }
 
