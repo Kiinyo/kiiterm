@@ -274,6 +274,30 @@ pub enum Overlay {
     Subtract,
     Multiply
 }
+fn parse_overlay (r: usize, o: usize, overlay: Overlay) -> usize {
+    match overlay {
+        Overlay::Simple => {
+            return o;
+        }
+        Overlay::Transparent => {
+            if o != 0 {
+                return o
+            } else {
+                return r
+            }
+        }
+        Overlay::Add => {
+            return r + o;
+        }
+        Overlay::Subtract => {
+            return r - o;
+        }
+        Overlay::Multiply => {
+            return r * o;
+        }
+    }
+}
+
 /// Draw a line on an existing grid
 pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize) -> Grid {
     // Some error handling so it's easier to debug for a user.
