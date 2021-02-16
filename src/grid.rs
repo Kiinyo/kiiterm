@@ -254,7 +254,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
                 }
             } else {
                 if polygon.tiles[y][x] == background {
-                    polygon = overlay_flood_fill(polygon, x, y, fill, false);
+                    polygon = flood_fill(polygon, x, y, fill, false);
                     break;
                 }
             }
@@ -462,8 +462,23 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
     grid
 
 }
+/// Returns a grid with p1 being the top left corner and p2 being the bottom right corner of the original grid.
+pub fn crop_grid (grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize) -> Grid {
+    let width = x2 - x1;
+    let height = y2 - y1;
+
+    let mut new_grid = create_grid(width, height, 0); 
+    
+    for h in 0..height {
+        for w in 0..width {
+            new_grid.tiles[h][w] = grid.tiles[y1 + h][x1 + w]
+        }
+    }
+
+    return new_grid
+}
 /// Fill a grid at (x, y).
-pub fn overlay_flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bool) -> Grid {
+pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bool) -> Grid {
     let bucket_target: usize = grid.tiles[y][x];
     let mut bucket: usize = fill;
     grid.tiles[y][x] = bucket;          
