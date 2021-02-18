@@ -1,4 +1,4 @@
-pub struct element {
+pub struct Element {
     // Identifiers
     name: String,
     desc: String,
@@ -26,5 +26,8 @@ pub enum Element_Type {
     }
 }
 pub enum Element_Action {
-    None
+    None,
+
+    Delete_Element,
+    Delete_Container
 }
