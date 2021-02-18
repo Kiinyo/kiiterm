@@ -1,3 +1,5 @@
+use crate::graphics::Glyph;
+
 /// Where the widget is in coordinate space.
 pub struct Position {
     // Where the ui piece actually is
@@ -28,15 +30,8 @@ pub enum Resize {
     None
 }
 pub struct Appearance {
-    // The color of the body of a text box
-    primary_color: crate::graphics::Color,
-    // The color of the bar along the top
-    secondary_color: crate::graphics::Color,
-    // The color of any text in the box
-    tertiary_color: crate::graphics::Color,
-
+    body: crate::graphics::Glyph,
     text: Text,
-    
     // The shape of the widget itself
     shape: crate::grid::Shape,
     // Animation of the appearance
