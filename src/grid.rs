@@ -229,7 +229,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     loop {
         if i >= length {break;}
 
-        polygon = overlay_line(polygon, 
+        overlay_line(&mut polygon, 
             vertices[i - 3], vertices[i - 2], 
             vertices[i - 1], vertices[i], 
             border, &Overlay::Simple
@@ -238,7 +238,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
         i += 2;
     }
     // And close the polygon
-    polygon = overlay_line(polygon, 
+    overlay_line(&mut polygon, 
         vertices[0], vertices[1], 
         vertices[length - 2], vertices[length - 1], 
         border, &Overlay::Simple
@@ -254,7 +254,7 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
                 }
             } else {
                 if polygon.tiles[y][x] == background {
-                    polygon = flood_fill(polygon, x, y, fill, false);
+                    flood_fill(&mut polygon, x, y, fill, false);
                     break;
                 }
             }
@@ -363,16 +363,15 @@ fn parse_overlay (r: usize, o: usize, overlay: &Overlay) -> usize {
 }
 
 /// Overlays a grid (o_grid) on a recieving grid (r_grid).
-pub fn overlay_grid (mut r_grid: Grid, o_grid: Grid, x: usize, y: usize, overlay: &Overlay) -> Grid {
+pub fn overlay_grid (r_grid: &mut Grid, o_grid: Grid, x: usize, y: usize, overlay: &Overlay) {
     for h in 0..o_grid.height as usize {
         for w in 0..o_grid.width as usize {
             r_grid.tiles[y + h][x + w] = parse_overlay(r_grid.tiles[y + h][x + w], o_grid.tiles[h][w], overlay);
         }
     }
-    return r_grid;
 }
 /// Draw a line on an existing grid.
-pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize, overlay: &Overlay) -> Grid {
+pub fn overlay_line (grid: &mut Grid, x1: usize, y1: usize, x2: usize, y2: usize, fill: usize, overlay: &Overlay) {
     // Some error handling so it's easier to debug for a user.
     if x1 >= grid.width {
         panic!("kiiterm::overlay_line: \"The starting X is greater than the Grid's width!\"");
@@ -399,7 +398,7 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
             if y + y1 as isize == y2 as isize {break;};
             y += sy;
         }
-        return grid;
+        return ();
     } else if dy == 0 {
         // The line is horizontal
         loop {
@@ -407,7 +406,7 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
             if x + x1 as isize == x2 as isize {break;};
             x += sx;
         }
-        return grid;
+        return ();
     }
     // How many times we need to step up
     let m: isize = dx.abs() - dy.abs();
@@ -458,12 +457,9 @@ pub fn overlay_line (mut grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize,
             if (slope * y as f32).abs() > (x as f32).abs() {x += sx;};
         }
     }
-
-    grid
-
 }
 /// Returns a grid with p1 being the top left corner and p2 being the bottom right corner of the original grid.
-pub fn crop_grid (grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize) -> Grid {
+pub fn crop_grid (grid: &mut Grid, x1: usize, y1: usize, x2: usize, y2: usize) {
     let width = x2 - x1;
     let height = y2 - y1;
 
@@ -475,10 +471,10 @@ pub fn crop_grid (grid: Grid, x1: usize, y1: usize, x2: usize, y2: usize) -> Gri
         }
     }
 
-    return new_grid
+    *grid = new_grid;
 }
 /// Fill a grid at (x, y).
-pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bool) -> Grid {
+pub fn flood_fill (grid: &mut Grid, x: usize, y: usize, fill: usize, additive: bool) {
     let bucket_target: usize = grid.tiles[y][x];
     let mut bucket: usize = fill;
     grid.tiles[y][x] = bucket;          
@@ -538,7 +534,4 @@ pub fn flood_fill (mut grid: Grid, x: usize, y: usize, fill: usize, additive: bo
             future_queue.clear();
         }
     }
-
-    // Return the grid
-    grid
 }
