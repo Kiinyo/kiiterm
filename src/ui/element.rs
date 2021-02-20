@@ -14,6 +14,7 @@ pub struct Element {
 }
 pub enum ElementType {
     Default,
+    Header,
     Interactive {
         press: ElementAction,
         release: ElementAction,
@@ -55,7 +56,7 @@ pub struct ElementTemplate {
     padding_x: usize,
     padding_y: usize
 }
-
+// Create an Element
 pub fn create (template: ElementTemplate, container: &mut container::Container) -> Element {
 
     let size = Size {
@@ -175,13 +176,16 @@ pub fn create (template: ElementTemplate, container: &mut container::Container) 
 
     return element;
 }
+/// Update an Element
+pub fn update (element: &mut Element) {
 
+}
 pub struct ElementReference {
-    align_x: AlignX,
-    align_y: AlignY,
-    offset_x: f32,
-    offset_y: f32,
-    scale_width: f32,
-    scale_height: f32
+    pub align_x: AlignX,
+    pub align_y: AlignY,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub scale_width: f32,
+    pub scale_height: f32
 
 }
