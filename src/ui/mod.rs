@@ -9,7 +9,7 @@ pub struct Position {
     target_x: usize,
     target_y: usize,
     // How it'll get there
-    Animation: Animation<Reposition>
+    animation: Animation<Reposition>
 }
 /// The possible ways to animate a repositing widget.
 pub enum Reposition {
@@ -23,7 +23,7 @@ pub struct Size {
     target_width: usize,
     target_height: usize,
 
-    Animation: Animation<Resize>
+    animation: Animation<Resize>
 }
 /// The possible ways to animate resizing a widget.
 pub enum Resize {
