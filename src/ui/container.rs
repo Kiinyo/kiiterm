@@ -110,7 +110,7 @@ pub fn create (mut template: ContainerTemplate) -> Container {
     return container;
 }
 /// Adds an element and returns its name/key in the hashmap.
-pub fn add_element(container: &mut Container, element: element::Element) -> String {
+pub fn add_element (container: &mut Container, element: element::Element) -> String {
     let name = element.name.clone();
     // Determine the element's draw order position
     container.elem_order.push(name.clone());
@@ -130,4 +130,68 @@ pub fn remove_element (container: &mut Container, name: String) -> element::Elem
     }
     // Remove it from the hash map and return it
     container.elements.remove(&name).unwrap()
+}
+/// Scales the elements appropriately
+fn format_elements (container: &mut Container) {
+    for (_, element) in container.elements.iter_mut() {
+        match element.elem_type {
+            element::ElementType::Header => {
+                element.appearance.text.string = crate::graphics::parse_string_to_glyphs(container.name.clone())
+            },
+            _ => {}
+        };
+        // Size formatting
+        element.size.current_width = ( 
+            element.reference.scale_width 
+            * container.size.current_width as f32 
+        ) as usize;
+        element.size.current_height = ( 
+            element.reference.scale_height 
+            * container.size.current_height as f32 
+        ) as usize;
+        // Position formatting
+        element.position.current_x = match element.reference.align_x {
+            AlignX::Left => {
+                0 + (element.reference.offset_x * container.size.current_width as f32) as usize
+            }
+            AlignX::Center => {
+                ((container.size.current_width / 2 - element.size.current_width / 2) as isize
+                + (element.reference.offset_x * container.size.current_width as f32) as isize) as usize
+            }
+            AlignX::Right => {
+                container.size.current_width - element.size.current_width
+                - (element.reference.offset_x * container.size.current_width as f32) as usize
+            }
+        };
+        element.position.current_y = match element.reference.align_y {
+            AlignY::Up => {
+                0 + (element.reference.offset_y * container.size.current_height as f32) as usize
+            }
+            AlignY::Center => {
+                ((container.size.current_height / 2 - element.size.current_height / 2) as isize
+                + (element.reference.offset_y * container.size.current_height as f32) as isize) as usize
+            }
+            AlignY::Down => {
+                container.size.current_height - element.size.current_height
+                - (element.reference.offset_y * container.size.current_height as f32) as usize
+            }
+        };
+    }
+}
+
+pub fn update (container: &mut Container) {
+    // Apply any animations
+
+    // 
+
+    // Make any changes to the elements
+    format_elements(container);
+    // Now update them
+    update_elements(container);
+}
+
+fn update_elements (container: &mut Container) {
+    for (_, element) in container.elements.iter_mut() {
+        element::update(element);
+    }
 }
