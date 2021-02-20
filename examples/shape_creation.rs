@@ -2,16 +2,16 @@ use kiiterm::{grid::*, terminal::clear};
 fn simple_parse (string: &str) -> Shape {
     match string {
         "Right_Iso_Tri" => {
-            return Shape::Right_Iso_Tri;
+            return Shape::RightIsoTri;
         }
         "Left_Iso_Tri" => {
-            return Shape::Left_Iso_Tri;
+            return Shape::LeftIsoTri;
         }
         "Up_Iso_Tri" => {
-            return Shape::Up_Iso_Tri;
+            return Shape::UpIsoTri;
         }
         "Down_Iso_Tri" => {
-            return Shape::Down_Iso_Tri;
+            return Shape::DownIsoTri;
         }
         "Circle" => {
             return Shape::Circle;

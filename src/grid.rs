@@ -18,8 +18,8 @@ impl std::fmt::Debug for Grid {
 
 }
 
-/// Create a grid with with width and height and fill it.
-pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
+/// Create a blank grid with with width and height and fill it.
+fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     // Loop to fill in everything
     let mut tiles: Vec<Vec<usize>> = Vec::new();
     for _y in 0..height {
@@ -37,7 +37,7 @@ pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
         tiles
     }
 }
-/// Create a rectangle grid
+/// Create a grid with a rectangle (faster than the usual create polygon method)
 fn create_rectangle (width: usize, height: usize, border: usize, fill: usize) -> Grid {
     let mut tiles: Vec<Vec<usize>> = Vec::new();
     let w_usize:usize = width;
@@ -65,7 +65,7 @@ fn create_rectangle (width: usize, height: usize, border: usize, fill: usize) ->
         tiles,
     }
 }
-/// Create a circle in a grid. 
+/// Create a circle in a grid  (faster than the usual create polygon method)
 fn create_circle (radius:usize, border: usize, fill: usize) -> Grid {
     // To-Do: Every 45 degree increment, a tile gets drawn twice, optimize?
 
@@ -264,43 +264,43 @@ pub fn create_polygon (width: usize, height: usize, vertices: Vec<usize>, fill: 
     polygon
 }
 /// All the possible shapes
-#[allow(non_camel_case_types)]
 pub enum Shape {
     // Isosceles Triangle
-    Right_Iso_Tri,
-    Left_Iso_Tri,
-    Up_Iso_Tri,
-    Down_Iso_Tri,
+    RightIsoTri,
+    LeftIsoTri,
+    UpIsoTri,
+    DownIsoTri,
 
     Circle,
     Rectangle
 }
+/// Helper function to parse Shapes
 fn parse_shape(shape: Shape, width: usize, height: usize) -> Vec<usize> {
     let w = width - 1;
     let h = height - 1;
     match shape {
-        Shape::Right_Iso_Tri => {
+        Shape::RightIsoTri => {
             return vec![
                 0, 0,
                 w, h / 2,
                 0, h
             ]
         }
-        Shape::Left_Iso_Tri => {
+        Shape::LeftIsoTri => {
             return vec![
                 w, 0,
                 w, h,
                 w,  h / 2
             ]
         }
-        Shape::Up_Iso_Tri => {
+        Shape::UpIsoTri => {
             return vec![
                 w / 2, 0,
                 w, h,
                 0, h
             ]
         }
-        Shape::Down_Iso_Tri => {
+        Shape::DownIsoTri => {
             return vec![
                 0, 0,
                 w, 0,
