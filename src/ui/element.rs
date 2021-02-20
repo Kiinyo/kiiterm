@@ -5,44 +5,43 @@ pub struct Element {
     desc: String,
     elem_id: usize,
     // Things the element can do
-    elem_type: Element_Type,
+    elem_type: ElementType,
     // Physical properties
     position: Position,
     size: Size,
     appearance: Appearance,
     // Template for later use/reference
-    template: Element_Template
+    reference: ElementReference
 }
-
-pub enum Element_Type {
+pub enum ElementType {
     Default,
     Interactive {
-        press: Element_Action,
-        release: Element_Action,
+        press: ElementAction,
+        release: ElementAction,
 
-        click: Element_Action,
-        abandon: Element_Action,
+        click: ElementAction,
+        abandon: ElementAction,
 
-        drag: Element_Action,
+        drag: ElementAction,
 
-        scroll: Element_Action,
+        scroll: ElementAction,
     }
 }
-pub enum Element_Action {
+pub enum ElementAction {
     None,
 
-    Delete_Element,
-    Delete_Container
+    DeleteElement,
+    DeleteContainer
 }
 
-pub struct Element_Template {
+pub struct ElementTemplate {
     name: String,
     desc: String,
-    elem_type: Element_Type,
+    elem_type: ElementType,
     // Percentage of Container (<=1)
-    align_x: Align_X,
+    align_x: AlignX,
     offset_x: f32,
-    align_y: Align_Y,
+    align_y: AlignY,
     offset_y: f32,
     // Percentage of Container (<=1)
     scale_width: f32,
@@ -52,13 +51,13 @@ pub struct Element_Template {
     shape: crate::grid::Shape,
     // Text handling
     text: String,
-    text_align_x: Align_X,
-    text_align_y: Align_Y,
+    text_align_x: AlignX,
+    text_align_y: AlignY,
     padding_x: usize,
     padding_y: usize
 }
 
-pub fn create (container: container::Container, template: Element_Template) -> Element {
+pub fn create (container: &mut container::Container, template: ElementTemplate) -> Element {
 
     let size = Size {
         // Current
@@ -77,47 +76,56 @@ pub fn create (container: container::Container, template: Element_Template) -> E
     
     let position = Position {
         current_x: match template.align_x {
-            Align_X::Left => {
-                0
+            AlignX::Left => {
+                0 + (template.offset_x * container.size.current_width as f32) as usize
             }
-            Align_X::Center => {
-                container.size.current_width / 2 - size.current_width / 2
+            AlignX::Center => {
+                ((container.size.current_width / 2 - size.current_width / 2) as isize
+                + (template.offset_x * container.size.current_width as f32) as isize) as usize
             }
-            Align_X::Right => {
+            AlignX::Right => {
                 container.size.current_width - size.current_width
+                - (template.offset_x * container.size.current_width as f32) as usize
             }
         },
         current_y: match template.align_y {
-            Align_Y::Up => {
-                0
+            AlignY::Up => {
+                0 
             }
-            Align_Y::Center => {
-                container.size.current_height / 2 - size.current_height / 2
+            AlignY::Center => {
+                ((container.size.current_height / 2 - size.current_height / 2) as isize
+                + (template.offset_y * container.size.current_height as f32) as isize) as usize
             }
-            Align_Y::Down => {
+            AlignY::Down => {
                 container.size.current_height - size.current_height
             }
         },
         target_x: match template.align_x {
-            Align_X::Left => {
+            AlignX::Left => {
                 0
+                + (template.offset_x * container.size.target_width as f32) as usize
             }
-            Align_X::Center => {
-                container.size.target_width / 2 - size.target_width / 2
+            AlignX::Center => {
+                ((container.size.target_width / 2 - size.target_width / 2) as isize
+                + (template.offset_x * container.size.target_width as f32) as isize) as usize
             }
-            Align_X::Right => {
+            AlignX::Right => {
                 container.size.target_width - size.target_width
+                - (template.offset_x * container.size.target_width as f32) as usize
             }
         },
         target_y: match template.align_y {
-            Align_Y::Up => {
+            AlignY::Up => {
                 0
+                + (template.offset_y * container.size.target_height as f32) as usize
             }
-            Align_Y::Center => {
-                container.size.target_height / 2 - size.target_height / 2
+            AlignY::Center => {
+                ((container.size.target_height / 2 - size.target_height / 2) as isize
+                + (template.offset_y * container.size.target_height as f32) as isize) as usize
             }
-            Align_Y::Down => {
+            AlignY::Down => {
                 container.size.target_height - size.target_height
+                - (template.offset_y * container.size.target_height as f32) as usize
             }
         },
         animation: Animation {
@@ -132,8 +140,8 @@ pub fn create (container: container::Container, template: Element_Template) -> E
         body: template.body,
         text: Text {
             string: crate::graphics::parse_string_to_glyphs(template.text),
-            align_x: template.text_align_x,
-            align_y: template.text_align_y,
+            AlignX: template.text_align_x,
+            AlignY: template.text_align_y,
             padding_x: template.padding_x,
             padding_y: template.padding_y,
             buffer: crate::grid::create_grid(1,1, 0)
@@ -157,10 +165,27 @@ pub fn create (container: container::Container, template: Element_Template) -> E
         position,
         size,
         appearance,
-        template
+        reference: ElementReference{
+            align_x: template.align_x,
+            align_y: template.align_y,
+            offset_x: template.offset_x,
+            offset_y: template.offset_y,
+            scale_width: template.scale_width,
+            scale_height: template.scale_height
+        }
     };
 
     container.elem_id += 1;
 
     return element;
+}
+
+pub struct ElementReference {
+    align_x: AlignX,
+    align_y: AlignY,
+    offset_x: f32,
+    offset_y: f32,
+    scale_width: f32,
+    scale_height: f32
+
 }

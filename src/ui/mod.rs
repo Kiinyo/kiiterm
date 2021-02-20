@@ -1,5 +1,3 @@
-use crate::graphics::Glyph;
-
 /// Where the widget is in coordinate space.
 pub struct Position {
     // Where the ui piece actually is
@@ -17,13 +15,13 @@ pub enum Reposition {
 }
 /// The amount of space the widget takes up.
 pub struct Size {
-    current_width: usize,
-    current_height: usize,
+    pub current_width: usize,
+    pub current_height: usize,
 
-    target_width: usize,
-    target_height: usize,
+    pub target_width: usize,
+    pub target_height: usize,
 
-    animation: Animation<Resize>
+    pub animation: Animation<Resize>
 }
 /// The possible ways to animate resizing a widget.
 pub enum Resize {
@@ -43,8 +41,8 @@ pub struct Appearance {
 pub struct Text {
     string: Vec<crate::graphics::Glyph>,
     // Alignment of the text
-    align_x: Align_X,
-    align_y: Align_Y,
+    AlignX: AlignX,
+    AlignY: AlignY,
     // How far from the edge of the widget text can be displayed
     padding_x: usize,
     padding_y: usize,
@@ -52,12 +50,12 @@ pub struct Text {
     // when calling up draw functions.
     buffer: crate::grid::Grid
 }
-pub enum Align_X {
+pub enum AlignX {
     Left,
     Center,
     Right
 }
-pub enum Align_Y {
+pub enum AlignY {
     Up,
     Center,
     Down
@@ -66,12 +64,12 @@ pub enum Shader {
     None
 }
 /// Animation container
-pub struct Animation<Animation_Type> {
+pub struct Animation<AnimationType> {
     // Details about what frame the animation is in
     current_frame: usize,
     target_frame: usize,
     // Info for actually parsing the animation.
-    animation_type: Animation_Type,
+    animation_type: AnimationType,
 }
 pub mod element;
 pub mod container;

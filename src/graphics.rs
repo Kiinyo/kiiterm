@@ -2,6 +2,7 @@ use crate::screen;
 /// Command used to reset the style of the screen.
 const RESET: &str = "\u{001B}[0m";
 #[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
 /// All the different styles possible for glyphs.
 pub enum Style {
     Default,
@@ -46,6 +47,7 @@ fn parse_style (style: &Style) -> String {
     code
 }
 /// All the different colors possible for glyphs.
+#[derive(Copy, Clone)]
 pub enum Color {
     Default,
     
@@ -104,7 +106,7 @@ fn parse_color (color: &Color, depth: &Depth) -> String {
     code
 }
 /// Parsing (x, y) coordinates into a command for the terminal.
-fn move_cursor (x: u16, y: u16) -> String {
+fn move_cursor (x: usize, y: usize) -> String {
     format!("\u{001B}[{};{}H", y + 1, x + 1)
 }
 /// The most basic unit that can be drawn to the terminal,
@@ -119,7 +121,7 @@ pub struct Glyph {
     pub styles: Vec<Style>
 }
 /// Draw function to draw glyphs to the screen.
-pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: u16, y: u16) {
+pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: usize, y: usize) {
     // Start the code variable we'll be drawing to the buffer
     let mut code  = move_cursor(x, y);
     // Add the style(s) to it
@@ -139,4 +141,130 @@ pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: u16, y: u16) {
     );
     // Finally draw the code to the buffer
     screen::buffer_write(screen, code);
+}
+enum ParseFlag {
+    None,
+
+    Waiting,
+
+    FgColor,
+    BgColor,
+    Style
+}
+// If you end a string with "\" it will be dropped so be careful!
+pub fn parse_string_to_glyphs(string: String) -> Vec<Glyph> {
+    // What we'll be returning
+    let mut glyph_vec = Vec::new();
+    // How to interpret the current char
+    let mut flag = ParseFlag::None;
+    // Colors
+    let mut fg_color = Color::Default;
+    let mut bg_color = Color::Default;
+    // Styles
+    let mut styles = vec![Style::Default];
+
+    // Iterate through the string and add Glyphs to
+    // the vector formatted with the above enums
+    for c in string.chars() {
+        // This is our escape code
+        match flag {
+            // We have a vanilla character
+            ParseFlag::None => {
+                if c == '\\' {
+                    flag = ParseFlag::Waiting;
+                } else {
+                    glyph_vec.push(Glyph {
+                        symbol: c.to_string(),
+                        fg_color,
+                        bg_color,
+                        styles: styles.clone()
+                    });
+                }
+            }
+            // We are waiting for an instruction
+            ParseFlag::Waiting => {
+                match c {
+                    'f' => {
+                        flag = ParseFlag::FgColor
+                    }
+                    'b' => {
+                        flag = ParseFlag::BgColor
+                    }
+                    's' => {
+                        flag = ParseFlag::Style
+                    }
+                    _ => {
+                        flag = ParseFlag::None;
+                        glyph_vec.push(Glyph {
+                            symbol: "\\".to_string(),
+                            fg_color,
+                            bg_color,
+                            styles: styles.clone()
+                        });
+                        glyph_vec.push(Glyph {
+                            symbol: c.to_string(),
+                            fg_color,
+                            bg_color,
+                            styles: styles.clone()
+                        });
+                    }
+                }
+            }
+            // We have our instruction and are waiting to carry it out
+            ParseFlag::FgColor => {
+                match c {
+                    '0' => fg_color = Color::Black,
+                    '1' => fg_color = Color::Red,
+                    '2' => fg_color = Color::Green,
+                    '3' => fg_color = Color::Yellow,
+                    '4' => fg_color = Color::Blue,
+                    '5' => fg_color = Color::Magenta,
+                    '6' => fg_color = Color::Cyan,
+                    '7' => fg_color = Color::White,
+                    _ => fg_color = Color::Default,
+                };
+                flag = ParseFlag::None;
+            }
+            ParseFlag::BgColor => {
+                match c {
+                    '0' => bg_color = Color::Black,
+                    '1' => bg_color = Color::Red,
+                    '2' => bg_color = Color::Green,
+                    '3' => bg_color = Color::Yellow,
+                    '4' => bg_color = Color::Blue,
+                    '5' => bg_color = Color::Magenta,
+                    '6' => bg_color = Color::Cyan,
+                    '7' => bg_color = Color::White,
+                    _ => bg_color = Color::Default,
+                };
+                flag = ParseFlag::None;
+            }
+            ParseFlag::Style => {
+                match c {
+                    '0' => styles.push(Style::Bright),
+                    '1' => styles.push(Style::Bold),
+                    '2' => styles.push(Style::Dim),
+                    '3' => styles.push(Style::Italics),
+                    '4' => styles.push(Style::Underline),
+                    '5' | '6' => styles.push(Style::Blink),
+                    '7' => styles.push(Style::Invert_Colors),
+                    '8' => styles.push(Style::Invisible),
+                    '9' => styles.push(Style::Strike_Through),
+
+                    ';' => flag = ParseFlag::None,
+
+                    _ => styles = vec![Style::Default]
+                }
+            }
+        }
+    }
+    
+    return glyph_vec;
+}
+pub fn draw_buffer(screen: &mut screen::Screen, buffer: Vec<Vec<Glyph>>, x: usize, y: usize) {
+    for y1 in 0..buffer.len() {
+        for x1 in 0..buffer[y].len() {
+            draw_glyph(screen, &buffer[y][x], x + x1, y + y1)
+        }
+    }
 }

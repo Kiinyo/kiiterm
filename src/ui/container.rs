@@ -4,7 +4,7 @@ pub struct Container {
     pub desc: String,
     pub cont_id: usize,
     // Things the element can do
-    pub cont_type: Container_Type,
+    pub cont_type: ContainerType,
     // Physical properties
     pub position: crate::ui::Position,
     pub size: crate::ui::Size,
@@ -14,7 +14,7 @@ pub struct Container {
     pub elements: Vec<crate::ui::element::Element>,
     pub element_buffer: crate::grid::Grid
 }
-pub enum Container_Type {
+pub enum ContainerType {
     Default
 }
 
