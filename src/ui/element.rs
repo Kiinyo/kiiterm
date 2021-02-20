@@ -1,17 +1,16 @@
 use crate::ui::*;
 pub struct Element {
     // Identifiers
-    name: String,
-    desc: String,
-    elem_id: usize,
+    pub name: String,
+    pub desc: String,
     // Things the element can do
-    elem_type: ElementType,
+    pub elem_type: ElementType,
     // Physical properties
-    position: Position,
-    size: Size,
-    appearance: Appearance,
+    pub position: Position,
+    pub size: Size,
+    pub appearance: Appearance,
     // Template for later use/reference
-    reference: ElementReference
+    pub reference: ElementReference
 }
 pub enum ElementType {
     Default,
@@ -57,7 +56,7 @@ pub struct ElementTemplate {
     padding_y: usize
 }
 
-pub fn create (container: &mut container::Container, template: ElementTemplate) -> Element {
+pub fn create (template: ElementTemplate, container: &mut container::Container) -> Element {
 
     let size = Size {
         // Current
@@ -137,14 +136,14 @@ pub fn create (container: &mut container::Container, template: ElementTemplate) 
     };
 
     let appearance = Appearance {
-        body: template.body,
+        body: template.body.clone(),
         text: Text {
             string: crate::graphics::parse_string_to_glyphs(template.text),
             AlignX: template.text_align_x,
             AlignY: template.text_align_y,
             padding_x: template.padding_x,
             padding_y: template.padding_y,
-            buffer: crate::grid::create_grid(1,1, 0)
+            buffer: vec![vec![template.body.clone()]]
         },
         shape: template.shape,
         animation: Animation {
@@ -153,14 +152,13 @@ pub fn create (container: &mut container::Container, template: ElementTemplate) 
             animation_type: Shader::None,
             
         },
-        buffer: crate::grid::create_grid(1,1, 0)
+        buffer: vec![vec![template.body.clone()]]
 
     };
 
     let element: Element = Element {
         name: template.name,
         desc: template.desc,
-        elem_id: container.elem_id,
         elem_type: template.elem_type,
         position,
         size,
@@ -174,8 +172,6 @@ pub fn create (container: &mut container::Container, template: ElementTemplate) 
             scale_height: template.scale_height
         }
     };
-
-    container.elem_id += 1;
 
     return element;
 }

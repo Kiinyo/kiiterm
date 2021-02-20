@@ -1,3 +1,5 @@
+use crate::graphics::Glyph;
+
 /// Where the widget is in coordinate space.
 pub struct Position {
     // Where the ui piece actually is
@@ -36,7 +38,7 @@ pub struct Appearance {
     animation: crate::ui::Animation<Shader>,
     // The actual grid of (pixels), saves time
     // when calling up draw functions.
-    buffer: crate::grid::Grid
+    buffer: Vec<Vec<Glyph>>
 }
 pub struct Text {
     string: Vec<crate::graphics::Glyph>,
@@ -48,7 +50,7 @@ pub struct Text {
     padding_y: usize,
     // The actual grid of (pixels), saves time
     // when calling up draw functions.
-    buffer: crate::grid::Grid
+    buffer: Vec<Vec<Glyph>>
 }
 pub enum AlignX {
     Left,
