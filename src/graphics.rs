@@ -167,7 +167,7 @@ enum ParseFlag {
 // If you end a string with "\" it will be dropped so be careful!
 pub fn parse_string_to_glyphs(string: String) -> Vec<Glyph> {
     // What we'll be returning
-    let mut glyph_vec = Vec::new();
+    let mut glyph_vec: Vec<Glyph> = Vec::new();
     // How to interpret the current char
     let mut flag = ParseFlag::None;
     // Colors
