@@ -19,7 +19,7 @@ impl std::fmt::Debug for Grid {
 }
 
 /// Create a grid with with width and height and fill it.
-fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
+pub fn create_grid (width: usize, height: usize, fill: usize) -> Grid {
     // Loop to fill in everything
     let mut tiles: Vec<Vec<usize>> = Vec::new();
     for _y in 0..height {
