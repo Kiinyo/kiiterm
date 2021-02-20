@@ -120,6 +120,19 @@ pub struct Glyph {
     // Any styles the glyph might have
     pub styles: Vec<Style>
 }
+
+impl Clone for Glyph {
+    fn clone(&self) -> Glyph {
+        let glyph = Glyph {
+            symbol: self.symbol.clone(),
+            fg_color: self.fg_color.clone(),
+            bg_color: self.bg_color.clone(),
+            styles: self.styles.clone(),
+        };
+        return glyph
+    }
+}
+
 /// Draw function to draw glyphs to the screen.
 pub fn draw_glyph(screen: &mut screen::Screen, glyph: &Glyph, x: usize, y: usize) {
     // Start the code variable we'll be drawing to the buffer
